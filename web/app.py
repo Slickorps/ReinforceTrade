@@ -2,14 +2,16 @@
 Flask application factory with REST API routes for trading metrics.
 
 Endpoints:
-    GET /api/metrics     - Real-time performance metrics (JSON)
-    GET /api/positions   - Real-time position data (JSON)
-    GET /api/performance - Performance statistics summary (JSON)
-    GET /api/trades      - Recent trade history (JSON)
+    GET /dashboard        - Real-time monitoring dashboard (HTML)
+    GET /api/metrics      - Real-time performance metrics (JSON)
+    GET /api/positions    - Real-time position data (JSON)
+    GET /api/performance  - Performance statistics summary (JSON)
+    GET /api/trades       - Recent trade history (JSON)
+    GET /api/health       - Health check
 """
 
 from typing import Optional, Dict, Any, List
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 
 from trading.order_manager import OrderManager
 from trading.position_tracker import PositionTracker
@@ -96,6 +98,15 @@ def create_app(
         return response
 
     # ── Routes ────────────────────────────────────────────────────
+
+    @app.route("/dashboard", methods=["GET"])
+    def dashboard():
+        """
+        GET /dashboard
+
+        Returns the real-time monitoring dashboard HTML page.
+        """
+        return render_template("dashboard.html")
 
     @app.route("/api/metrics", methods=["GET"])
     def api_metrics():
@@ -229,7 +240,7 @@ def create_app(
             "timestamp": _now_iso(),
         })
 
-    logger.info("Flask web application created (6 routes)")
+    logger.info("Flask web application created (7 routes)")
     return app
 
 

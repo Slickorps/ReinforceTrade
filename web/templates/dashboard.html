@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReinforceTrade — 实时监控面板</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="header__title">📊 ReinforceTrade</h1>
+            <div class="header__status" id="status-indicator">
+                <span class="status-dot disconnected"></span>
+                <span class="status-text">已断开</span>
+            </div>
+            <span class="header__time" id="current-time">--</span>
+        </header>
+
+        <!-- Performance cards -->
+        <section class="cards" id="cards-row">
+            <div class="card">
+                <div class="card__label">胜率</div>
+                <div class="card__value" id="card-win-rate">--%</div>
+            </div>
+            <div class="card">
+                <div class="card__label">盈亏比</div>
+                <div class="card__value" id="card-profit-factor">--</div>
+            </div>
+            <div class="card">
+                <div class="card__label">最大回撤</div>
+                <div class="card__value negative" id="card-max-drawdown">--%</div>
+            </div>
+            <div class="card">
+                <div class="card__label">夏普比率</div>
+                <div class="card__value" id="card-sharpe">--</div>
+            </div>
+            <div class="card">
+                <div class="card__label">总交易数</div>
+                <div class="card__value" id="card-total-trades">0</div>
+            </div>
+            <div class="card">
+                <div class="card__label">总盈亏</div>
+                <div class="card__value" id="card-total-pnl">$0.00</div>
+            </div>
+        </section>
+
+        <!-- Portfolio P&L summary -->
+        <section class="section">
+            <h2 class="section__title">💰 投资组合</h2>
+            <div class="portfolio-grid" id="portfolio-grid">
+                <div class="mini-card">
+                    <span class="mini-card__label">未实现盈亏</span>
+                    <span class="mini-card__value" id="port-unrealized-pnl">$0.00</span>
+                </div>
+                <div class="mini-card">
+                    <span class="mini-card__label">已实现盈亏</span>
+                    <span class="mini-card__value" id="port-realized-pnl">$0.00</span>
+                </div>
+                <div class="mini-card">
+                    <span class="mini-card__label">总盈亏</span>
+                    <span class="mini-card__value" id="port-total-pnl">$0.00</span>
+                </div>
+                <div class="mini-card">
+                    <span class="mini-card__label">持仓价值</span>
+                    <span class="mini-card__value" id="port-position-value">$0.00</span>
+                </div>
+                <div class="mini-card">
+                    <span class="mini-card__label">活跃持仓</span>
+                    <span class="mini-card__value" id="port-active-positions">0</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Positions table -->
+        <section class="section">
+            <h2 class="section__title">📋 当前持仓</h2>
+            <div class="table-wrapper">
+                <table class="table" id="positions-table">
+                    <thead>
+                        <tr>
+                            <th data-sort="symbol">交易对 ▾</th>
+                            <th data-sort="side">方向 ▾</th>
+                            <th data-sort="size">数量 ▾</th>
+                            <th data-sort="entry_price">入场价 ▾</th>
+                            <th data-sort="current_price">当前价 ▾</th>
+                            <th data-sort="unrealized_pnl">未实现盈亏 ▾</th>
+                            <th data-sort="pnl_percentage">盈亏% ▾</th>
+                        </tr>
+                    </thead>
+                    <tbody id="positions-tbody">
+                        <tr class="empty-row">
+                            <td colspan="7">暂无持仓数据</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Recent trades table -->
+        <section class="section">
+            <h2 class="section__title">📜 最近交易</h2>
+            <div class="table-wrapper">
+                <table class="table" id="trades-table">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>交易对</th>
+                            <th>方向</th>
+                            <th>数量</th>
+                            <th>价格</th>
+                            <th>盈亏</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trades-tbody">
+                        <tr class="empty-row">
+                            <td colspan="6">暂无交易记录</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <span>ReinforceTrade — 自动刷新 <span id="refresh-countdown">3</span>s</span>
+            <span>最后更新: <span id="last-update">--</span></span>
+        </footer>
+    </div>
+
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>

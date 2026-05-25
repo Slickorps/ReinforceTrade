@@ -1,0 +1,342 @@
+/* ==========================================================================
+   ReinforceTrade Dashboard — Dark Theme Styles
+   ========================================================================== */
+
+:root {
+    --bg-primary: #0f1117;
+    --bg-secondary: #161822;
+    --bg-card: #1c1f2e;
+    --bg-table-header: #1e2132;
+    --bg-table-row-hover: #262a3a;
+    --border: #2a2d3e;
+    --text-primary: #e1e4ed;
+    --text-secondary: #8b8fa6;
+    --text-muted: #5a5e76;
+    --accent-green: #22c55e;
+    --accent-red: #ef4444;
+    --accent-blue: #3b82f6;
+    --accent-yellow: #f59e0b;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --radius: 8px;
+    --radius-sm: 4px;
+}
+
+/* ── Reset & Base ──────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 14px;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+        "Noto Sans SC", sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.5;
+    min-height: 100vh;
+}
+
+/* ── Layout ─────────────────────────────────────────────────────────── */
+.app {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 16px 20px 32px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+.header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.header__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.header__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: var(--bg-card);
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-dot.connected {
+    background: var(--accent-green);
+    box-shadow: 0 0 6px var(--accent-green);
+}
+
+.status-dot.disconnected {
+    background: var(--accent-red);
+    box-shadow: 0 0 6px var(--accent-red);
+}
+
+.header__time {
+    margin-left: auto;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+/* ── Cards Row ──────────────────────────────────────────────────────── */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+}
+
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    transition: border-color 0.2s, transform 0.15s;
+}
+
+.card:hover {
+    border-color: var(--accent-blue);
+    transform: translateY(-1px);
+}
+
+.card__label {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+.card__value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.card__value.negative {
+    color: var(--accent-red);
+}
+
+.card__value.positive {
+    color: var(--accent-green);
+}
+
+/* ── Section ────────────────────────────────────────────────────────── */
+.section {
+    margin-bottom: 28px;
+}
+
+.section__title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+}
+
+/* ── Portfolio Mini-Cards ───────────────────────────────────────────── */
+.portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+}
+
+.mini-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mini-card__label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.mini-card__value {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* ── Table ──────────────────────────────────────────────────────────── */
+.table-wrapper {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    white-space: nowrap;
+}
+
+.table thead {
+    background: var(--bg-table-header);
+}
+
+.table th {
+    padding: 10px 12px;
+    text-align: right;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s;
+}
+
+.table th:hover {
+    color: var(--text-primary);
+}
+
+.table th:first-child {
+    text-align: left;
+}
+
+.table td {
+    padding: 10px 12px;
+    text-align: right;
+    border-top: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.88rem;
+}
+
+.table td:first-child {
+    text-align: left;
+    font-weight: 600;
+}
+
+.table tbody tr {
+    transition: background 0.12s;
+}
+
+.table tbody tr:hover {
+    background: var(--bg-table-row-hover);
+}
+
+.table tbody tr.empty-row td {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 24px 12px;
+    font-style: italic;
+}
+
+/* PnL cell coloring */
+.pnl-positive {
+    color: var(--accent-green) !important;
+}
+
+.pnl-negative {
+    color: var(--accent-red) !important;
+}
+
+/* ── Smooth value transitions ───────────────────────────────────────── */
+.card__value,
+.mini-card__value,
+.table td {
+    transition: color 0.3s ease, opacity 0.3s ease;
+}
+
+.flash-update {
+    animation: flash 0.6s ease;
+}
+
+@keyframes flash {
+    0% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────── */
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0 0;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .app {
+        padding: 10px 12px 20px;
+    }
+
+    .header__title {
+        font-size: 1.2rem;
+    }
+
+    .cards {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+
+    .card {
+        padding: 12px;
+    }
+
+    .card__value {
+        font-size: 1.2rem;
+    }
+
+    .portfolio-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .table th,
+    .table td {
+        padding: 8px;
+        font-size: 0.78rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .portfolio-grid {
+        grid-template-columns: 1fr;
+    }
+}
