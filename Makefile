@@ -61,3 +61,12 @@ optimize:
 
 web:
 	python -c "from web.app import create_app; app = create_app(); app.run(host='0.0.0.0', port=8000, debug=True)"
+
+dashboard-install:
+	cd dashboard && npm install
+
+dashboard-build:
+	cd dashboard && npx tsc
+
+dashboard-watch:
+	cd dashboard && npx tsc --watch

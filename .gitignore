@@ -179,3 +179,11 @@ ehthumbs.db
 Thumbs.db
 
 .project/
+
+# TypeScript / Dashboard
+dashboard/node_modules/
+dashboard/dist/
+
+# Rust
+rust/target/
+rust/Cargo.lock

@@ -1,0 +1,17 @@
+{
+  "name": "reinforcetrade-dashboard",
+  "version": "1.0.0",
+  "description": "Real-time trading dashboard for ReinforceTrade",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}

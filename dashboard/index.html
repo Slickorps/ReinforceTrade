@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReinforceTrade Dashboard</title>
+  <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>ReinforceTrade</h1>
+      <div id="connection-status" class="status-disconnected">◉ Disconnected</div>
+    </header>
+
+    <main>
+      <section id="portfolio-section">
+        <h2>Portfolio</h2>
+        <div id="portfolio-summary" class="card">
+          <div class="stat">
+            <span class="label">Total P&L</span>
+            <span id="total-pnl" class="value">--</span>
+          </div>
+          <div class="stat">
+            <span class="label">Open Positions</span>
+            <span id="open-positions" class="value">--</span>
+          </div>
+          <div class="stat">
+            <span class="label">Win Rate</span>
+            <span id="win-rate" class="value">--</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="chart-section">
+        <h2>P&L Curve</h2>
+        <canvas id="pnl-chart" width="800" height="300"></canvas>
+      </section>
+
+      <section id="positions-section">
+        <h2>Positions</h2>
+        <div class="table-wrapper">
+          <table id="positions-table">
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Size</th>
+                <th>Entry Price</th>
+                <th>Mark Price</th>
+                <th>Unrealized P&L</th>
+                <th>P&L %</th>
+              </tr>
+            </thead>
+            <tbody id="positions-body">
+              <tr><td colspan="6" class="empty">Waiting for data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="trades-section">
+        <h2>Recent Trades</h2>
+        <div class="table-wrapper">
+          <table id="trades-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Symbol</th>
+                <th>Side</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>P&L</th>
+              </tr>
+            </thead>
+            <tbody id="trades-body">
+              <tr><td colspan="6" class="empty">Waiting for data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="dist/index.js"></script>
+</body>
+</html>

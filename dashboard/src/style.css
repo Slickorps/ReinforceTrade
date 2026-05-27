@@ -1,0 +1,146 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+}
+
+#app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid #333;
+  margin-bottom: 1.5rem;
+}
+
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+#connection-status {
+  font-size: 0.875rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+}
+
+.status-connected {
+  color: #00c853;
+  background: rgba(0, 200, 83, 0.1);
+}
+
+.status-disconnected {
+  color: #ff5252;
+  background: rgba(255, 82, 82, 0.1);
+}
+
+.status-reconnecting {
+  color: #ffd740;
+  background: rgba(255, 215, 64, 0.1);
+}
+
+h2 {
+  font-size: 1.125rem;
+  margin-bottom: 0.75rem;
+  color: #ccc;
+}
+
+.card {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem;
+  background: #16213e;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat .label {
+  font-size: 0.75rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat .value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+
+#chart-section {
+  margin-bottom: 1.5rem;
+}
+
+#pnl-chart {
+  width: 100%;
+  height: auto;
+  background: #16213e;
+  border-radius: 8px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #16213e;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th, td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #2a2a2a;
+  white-space: nowrap;
+}
+
+th {
+  background: #0f3460;
+  color: #888;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+td {
+  font-size: 0.9rem;
+}
+
+td.green { color: #00c853; }
+td.red { color: #ff5252; }
+
+.empty {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+}
+
+@media (max-width: 768px) {
+  #app { padding: 0.5rem; }
+  .card { flex-direction: column; gap: 0.75rem; }
+  th, td { padding: 0.5rem; font-size: 0.8rem; }
+}
