@@ -91,7 +91,7 @@ ipython_config.py
 #   install all needed dependencies.
 #Pipfile.lock
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
+# PEP 582; used by e.g. github.com/David-OConnor/pypy
 __pypackages__/
 
 # Celery stuff
@@ -178,8 +178,6 @@ config/secrets.json
 ehthumbs.db
 Thumbs.db
 
-.project/
-
 # TypeScript / Dashboard
 dashboard/node_modules/
 dashboard/dist/
@@ -187,3 +185,8 @@ dashboard/dist/
 # Rust
 rust/target/
 rust/Cargo.lock
+
+# Go Monitoring Agent
+monitor/monitor-agent
+monitor/dist/
+monitor/monitor-agent.exe

@@ -1,0 +1,58 @@
+{
+  "dashboard": {
+    "title": "ReinforceTrade - Trading System Monitor",
+    "tags": ["reinforcetrade", "trading", "quant"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "title": "System CPU & Memory",
+        "type": "graph",
+        "span": 6,
+        "targets": [
+          {"expr": "rate(process_cpu_seconds_total[1m])", "legendFormat": "CPU Usage"},
+          {"expr": "process_resident_memory_bytes / 1024 / 1024", "legendFormat": "Memory (MB)"}
+        ]
+      },
+      {
+        "title": "Goroutines Active",
+        "type": "graph",
+        "span": 6,
+        "targets": [
+          {"expr": "go_goroutines", "legendFormat": "Goroutines"}
+        ]
+      },
+      {
+        "title": "Order Execution Latency",
+        "type": "graph",
+        "span": 6,
+        "targets": [
+          {"expr": "rate(order_execution_latency_seconds_sum[1m]) / rate(order_execution_latency_seconds_count[1m])", "legendFormat": "Avg Latency"}
+        ]
+      },
+      {
+        "title": "WebSocket Connection Status",
+        "type": "stat",
+        "span": 3,
+        "targets": [
+          {"expr": "websocket_connected", "legendFormat": "Connected"}
+        ]
+      },
+      {
+        "title": "Active Positions",
+        "type": "stat",
+        "span": 3,
+        "targets": [
+          {"expr": "active_positions", "legendFormat": "Positions"}
+        ]
+      },
+      {
+        "title": "Trade Success Rate",
+        "type": "gauge",
+        "span": 6,
+        "targets": [
+          {"expr": "rate(trade_success_total[1h]) / rate(trade_total[1h]) * 100", "legendFormat": "Success Rate"}
+        ]
+      }
+    ]
+  }
+}
