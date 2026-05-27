@@ -1,0 +1,57 @@
+# Prometheus Configuration for ReinforceTrade Monitoring
+# 
+# This configures Prometheus to scrape metrics from:
+# 1. The Go monitoring agent (system-level metrics)
+# 2. The Python trading API (application-level metrics)
+#
+# Usage:
+#   prometheus --config.file=monitor/prometheus.yml
+
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+
+  # Attach these labels to any time series or alerts
+  external_labels:
+      monitor: 'reinforcetrade'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # alertmanager:9093
+
+# Load rules and alerts
+rule_files:
+  # - "alerts.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Go Monitoring Agent metrics
+  - job_name: 'reinforcetrade-monitor'
+    scrape_interval: 10s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'monitoring-agent'
+          language: 'go'
+
+  # Python Trading API metrics
+  - job_name: 'reinforcetrade-api'
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['localhost:8000']
+        labels:
+          service: 'trading-api'
+          language: 'python'
+
+  # Node exporter (if running in Docker)
+  - job_name: 'node-exporter'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['localhost:9100']
+        labels:
+          service: 'system'

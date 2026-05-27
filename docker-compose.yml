@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # --- Main Trading Bot (Python) ---
   reinforcetrade:
     build: .
     container_name: reinforcetrade
@@ -10,6 +11,8 @@ services:
       - EXCHANGE_API_KEY=${EXCHANGE_API_KEY}
       - EXCHANGE_SECRET=${EXCHANGE_SECRET}
       - EXCHANGE_NAME=${EXCHANGE_NAME:-binance}
+      - MONITOR_ENABLED=true
+      - MONITOR_AGENT_URL=http://monitor-agent:9090
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
@@ -20,7 +23,24 @@ services:
     networks:
       - reinforcetrade-network
 
-  # Optional: Redis for caching
+  # --- Go Monitoring Agent ---
+  monitor-agent:
+    image: golang:1.22-alpine
+    container_name: reinforcetrade-monitor
+    ports:
+      - "9090:9090"
+    environment:
+      - MONITOR_PORT=:9090
+    volumes:
+      - ./monitor:/go/src/monitor
+    working_dir: /go/src/monitor
+    command: >
+      sh -c "go build -o /tmp/monitor-agent . && /tmp/monitor-agent"
+    restart: unless-stopped
+    networks:
+      - reinforcetrade-network
+
+  # --- Redis for Caching ---
   redis:
     image: redis:7-alpine
     container_name: reinforcetrade-redis
@@ -31,7 +51,23 @@ services:
     networks:
       - reinforcetrade-network
 
-  # Optional: Jupyter notebook for analysis
+  # --- Prometheus Metrics (Monitoring Stack) ---
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: reinforcetrade-prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitor/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+    networks:
+      - reinforcetrade-network
+
+  # --- Jupyter Notebook for Analysis ---
   jupyter:
     build: .
     container_name: reinforcetrade-jupyter
@@ -49,6 +85,7 @@ services:
 
 volumes:
   redis-data:
+  prometheus-data:
 
 networks:
   reinforcetrade-network:
