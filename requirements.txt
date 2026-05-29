@@ -14,3 +14,7 @@ loguru
 aiohttp
 websockets
 flask
+
+# Optional: Broker adapters
+# ib_insync  # Interactive Brokers API (uncomment to use IB adapter)
+# oandapyV20 # OANDA forex API (uncomment to use OANDA adapter)
