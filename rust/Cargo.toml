@@ -1,0 +1,23 @@
+[package]
+name = "reforcetrade-engine"
+version = "0.1.0"
+edition = "2021"
+description = "High-performance data processing engine for ReinforceTrade"
+authors = ["EthanWalkerSV"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "reforcetrade_engine"
+
+[dependencies]
+pyo3 = { version = "0.21", features = ["extension-module", "f64"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+approx = "0.5"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
