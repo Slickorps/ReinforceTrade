@@ -1,6 +1,16 @@
 import pytest
 import numpy as np
-from ml import MomentumFactor, VolatilityFactor, SentimentFactor, FactorPipeline
+import pandas as pd
+from ml import (
+    MomentumFactor,
+    VolatilityFactor,
+    SentimentFactor,
+    FactorPipeline,
+    FeatureBuilder,
+    WalkForwardCV,
+    MLFactor,
+    MLFactorRouter,
+)
 
 
 # ---------- Fixtures ----------
@@ -193,3 +203,336 @@ class TestFactorPipeline:
         pipe = FactorPipeline()
         result = pipe.compute(short_data)
         assert "signal" in result
+
+
+# ---------- MLFactor (sklearn engine) ----------
+
+class TestFeatureBuilder:
+    def test_add_and_build(self):
+        fb = FeatureBuilder()
+        fb.add("momentum", lambda df: df["close"].pct_change(5))
+        fb.add("volatility", lambda df: df["close"].pct_change().rolling(5).std())
+        data = pd.DataFrame({"close": [100, 102, 101, 105, 107, 110, 108]})
+        X = fb.build(data)
+        assert list(X.columns) == ["momentum", "volatility"]
+        assert len(X) == len(data)
+
+    def test_remove_feature(self):
+        fb = FeatureBuilder()
+        fb.add("a", lambda df: df["close"])
+        assert fb.remove("a") is True
+        assert fb.remove("nonexistent") is False
+
+    def test_feature_names(self):
+        fb = FeatureBuilder()
+        fb.add("a", lambda df: df["close"])
+        fb.add("b", lambda df: df["close"] * 2)
+        assert fb.feature_names == ["a", "b"]
+        assert len(fb) == 2
+
+    def test_build_subset(self):
+        fb = FeatureBuilder()
+        fb.add("a", lambda df: df["close"])
+        fb.add("b", lambda df: df["close"] * 2)
+        data = pd.DataFrame({"close": [100, 200]})
+        X = fb.build(data, feature_names=["a"])
+        assert list(X.columns) == ["a"]
+
+    def test_unknown_feature_raises(self):
+        fb = FeatureBuilder()
+        data = pd.DataFrame({"close": [100]})
+        with pytest.raises(ValueError, match="Unknown feature 'xyz'"):
+            fb.build(data, feature_names=["xyz"])
+
+    def test_repr(self):
+        fb = FeatureBuilder()
+        fb.add("a", lambda df: df["close"])
+        assert "FeatureBuilder" in repr(fb)
+
+
+class TestWalkForwardCV:
+    def test_basic_split(self):
+        X = np.arange(500).reshape(-1, 1)
+        cv = WalkForwardCV(n_splits=3, train_size=100, test_size=30, gap=0)
+        splits = cv.split(X)
+        assert len(splits) >= 1
+        for train_idx, test_idx in splits:
+            # Temporal ordering preserved
+            assert max(train_idx) < min(test_idx)
+            assert len(train_idx) >= 100
+            assert len(test_idx) >= 30
+
+    def test_gap_respected(self):
+        X = np.arange(500).reshape(-1, 1)
+        cv = WalkForwardCV(n_splits=2, train_size=100, test_size=30, gap=5)
+        splits = cv.split(X)
+        for train_idx, test_idx in splits:
+            assert min(test_idx) - max(train_idx) == 6  # gap=5 → index diff = 6
+
+    def test_expanding_window(self):
+        X = np.arange(500).reshape(-1, 1)
+        cv = WalkForwardCV(n_splits=3, train_size=50, test_size=20, expanding=True)
+        splits = cv.split(X)
+        sizes = [len(t) for t, _ in splits]
+        # Expanding windows get larger each split
+        assert sizes == sorted(sizes)
+
+    def test_sliding_window(self):
+        X = np.arange(500).reshape(-1, 1)
+        cv = WalkForwardCV(n_splits=2, train_size=50, test_size=20, expanding=False)
+        splits_0 = cv.split(X)
+        # With sliding + expanding=False, the second window shifts forward
+        sizes = [len(t) for t, _ in splits_0]
+        assert len(splits_0) >= 2  # at least 2 splits expected
+
+    def test_insufficient_data(self):
+        X = np.arange(20).reshape(-1, 1)  # too small
+        cv = WalkForwardCV(n_splits=5, train_size=100, test_size=30)
+        splits = cv.split(X)
+        assert len(splits) == 0  # no valid splits
+
+    def test_get_n_splits(self):
+        cv = WalkForwardCV(n_splits=5)
+        assert cv.get_n_splits() == 5
+
+
+class TestMLFactor:
+    @pytest.fixture
+    def classification_data(self):
+        np.random.seed(42)
+        X = pd.DataFrame({
+            "f1": np.random.randn(200),
+            "f2": np.random.randn(200),
+            "f3": np.random.randn(200),
+        })
+        y = pd.Series((X["f1"] + X["f2"] > 0).astype(int))
+        return X, y
+
+    @pytest.fixture
+    def regression_data(self):
+        np.random.seed(42)
+        X = pd.DataFrame({
+            "f1": np.random.randn(200),
+            "f2": np.random.randn(200),
+        })
+        y = pd.Series(X["f1"] * 2 + X["f2"] * 0.5 + np.random.randn(200) * 0.1)
+        return X, y
+
+    def test_init_with_preset(self):
+        mf = MLFactor(preset="rf_classifier")
+        assert mf._pipeline is not None
+        assert mf._is_classifier is True
+
+    def test_init_with_custom_model(self):
+        from sklearn.linear_model import LogisticRegression
+        mf = MLFactor(model=LogisticRegression())
+        assert mf._pipeline is not None
+
+    def test_init_default(self):
+        mf = MLFactor()
+        assert mf._pipeline is not None
+
+    def test_fit_and_predict_classifier(self, classification_data):
+        X, y = classification_data
+        mf = MLFactor(preset="rf_classifier")
+        mf.fit(X, y)
+        preds = mf.predict(X)
+        assert len(preds) == len(y)
+        assert set(preds).issubset({0, 1})
+
+    def test_fit_and_predict_regression(self, regression_data):
+        X, y = regression_data
+        mf = MLFactor(preset="ridge_regressor")
+        mf.fit(X, y)
+        preds = mf.predict(X)
+        assert len(preds) == len(y)
+        assert np.issubdtype(preds.dtype, np.floating)
+
+    def test_predict_proba(self, classification_data):
+        X, y = classification_data
+        mf = MLFactor(preset="gb_classifier")
+        mf.fit(X, y)
+        probs = mf.predict_proba(X)
+        assert probs.shape == (len(X), 2)
+        assert np.allclose(probs.sum(axis=1), 1.0)
+
+    def test_predict_proba_regression_raises(self, regression_data):
+        X, y = regression_data
+        mf = MLFactor(preset="ridge_regressor")
+        mf.fit(X, y)
+        with pytest.raises(TypeError, match="predict_proba is only available for classification"):
+            mf.predict_proba(X)
+
+    def test_score_classifier(self, classification_data):
+        X, y = classification_data
+        mf = MLFactor(preset="lr_classifier")
+        mf.fit(X, y)
+        score = mf.score(X, y)
+        assert 0.0 <= score <= 1.0
+
+    def test_evaluate_classifier(self, classification_data):
+        X, y = classification_data
+        mf = MLFactor(preset="rf_classifier")
+        mf.fit(X, y)
+        metrics = mf.evaluate(X, y)
+        for key in ("accuracy", "precision", "recall", "f1"):
+            assert key in metrics
+            assert 0.0 <= metrics[key] <= 1.0
+
+    def test_evaluate_regressor(self, regression_data):
+        X, y = regression_data
+        mf = MLFactor(preset="ridge_regressor")
+        mf.fit(X, y)
+        metrics = mf.evaluate(X, y)
+        for key in ("r2", "mse", "rmse"):
+            assert key in metrics
+
+    def test_save_and_load(self, classification_data, tmp_path):
+        X, y = classification_data
+        mf = MLFactor(preset="rf_classifier", name="test_model", model_dir=str(tmp_path))
+        mf.fit(X, y)
+        path = mf.save()
+        # Load into a fresh instance
+        mf2 = MLFactor(name="test_model", model_dir=str(tmp_path))
+        mf2.load(path)
+        preds_orig = mf.predict(X)
+        preds_load = mf2.predict(X)
+        np.testing.assert_array_equal(preds_orig, preds_load)
+
+    def test_get_feature_importance(self, classification_data):
+        X, y = classification_data
+        mf = MLFactor(preset="rf_classifier")
+        mf.fit(X, y)
+        # Override feature names
+        mf.feature_builder = FeatureBuilder()
+        mf.feature_builder.add("f1", lambda df: df["f1"])
+        mf.feature_builder.add("f2", lambda df: df["f2"])
+        mf.feature_builder.add("f3", lambda df: df["f3"])
+        importance = mf.get_feature_importance()
+        assert importance is not None
+        assert len(importance) == 3
+
+    def test_walk_forward_fit(self):
+        np.random.seed(42)
+        n = 600
+        data = pd.DataFrame({
+            "f1": np.random.randn(n),
+            "f2": np.random.randn(n),
+            "target": ((np.random.randn(n) + 0.5) > 0).astype(int),
+        })
+        mf = MLFactor(preset="rf_classifier")
+        cv = WalkForwardCV(n_splits=3, train_size=150, test_size=50)
+        results = mf.walk_forward_fit(data, target_col="target", feature_cols=["f1", "f2"], cv=cv)
+        assert "splits" in results
+        assert len(results["splits"]) >= 1
+        assert "mean_score" in results
+        assert 0.0 <= results["mean_score"] <= 1.0
+
+    def test_summary(self):
+        mf = MLFactor(preset="rf_classifier", name="test_summary")
+        summary = mf.summary()
+        assert summary["name"] == "test_summary"
+        assert summary["type"] == "classifier"
+        assert summary["fitted"] is False
+
+    def test_unfitted_raises(self):
+        mf = MLFactor()
+        with pytest.raises(RuntimeError, match="not fitted"):
+            mf.predict(np.array([[1, 2]]))
+
+    def test_invalid_preset_raises(self):
+        with pytest.raises(ValueError, match="Unknown preset 'invalid'"):
+            MLFactor(preset="invalid")
+
+    def test_init_with_feature_builder(self):
+        fb = FeatureBuilder()
+        fb.add("f1", lambda df: df["close"])
+        mf = MLFactor(feature_builder=fb)
+        assert mf.feature_builder is fb
+        assert "f1" in mf.feature_names
+
+
+class TestMLFactorRouter:
+    @pytest.fixture
+    def router(self, tmp_path):
+        return MLFactorRouter(model_dir=str(tmp_path))
+
+    @pytest.fixture
+    def training_data(self):
+        np.random.seed(42)
+        X = pd.DataFrame({
+            "f1": np.random.randn(200),
+            "f2": np.random.randn(200),
+            "f3": np.random.randn(200),
+        })
+        y = pd.Series((X["f1"] + X["f2"] > 0).astype(int))
+        return X, y
+
+    def test_train_and_list(self, router, training_data):
+        X, y = training_data
+        record = router.train(X, y, preset="rf_classifier", name="my_model")
+        assert record.name == "my_model"
+        assert record.model_type == "rf_classifier"
+        assert record.metrics["accuracy"] > 0
+        models = router.list_models()
+        assert any(m.name == "my_model" for m in models)
+
+    def test_predict(self, router, training_data):
+        X, y = training_data
+        router.train(X, y, preset="rf_classifier", name="pred_model")
+        preds = router.predict("pred_model", X)
+        assert len(preds) == len(y)
+
+    def test_predict_with_proba(self, router, training_data):
+        X, y = training_data
+        router.train(X, y, preset="rf_classifier", name="proba_model")
+        probs = router.predict("proba_model", X, return_proba=True)
+        assert probs.shape == (len(X), 2)
+
+    def test_unknown_model_raises(self, router):
+        with pytest.raises(ValueError, match="not found"):
+            router.predict("nonexistent", pd.DataFrame({"a": [1, 2]}))
+
+    def test_get_model(self, router, training_data):
+        X, y = training_data
+        router.train(X, y, preset="rf_classifier", name="get_model_test")
+        mf = router.get_model("get_model_test")
+        assert mf is not None
+        assert mf.name == "get_model_test"
+
+    def test_get_nonexistent_model(self, router):
+        assert router.get_model("missing") is None
+
+    def test_delete_model(self, router, training_data, tmp_path):
+        X, y = training_data
+        router.train(X, y, preset="rf_classifier", name="del_model")
+        assert router.delete_model("del_model") is True
+        assert router.delete_model("del_model") is False  # already gone
+
+    def test_get_metrics(self, router, training_data):
+        X, y = training_data
+        router.train(X, y, preset="rf_classifier", name="metrics_model")
+        metrics = router.get_metrics("metrics_model")
+        assert metrics is not None
+        assert "accuracy" in metrics
+
+    def test_get_metrics_nonexistent(self, router):
+        assert router.get_metrics("ghost") is None
+
+    def test_auto_name(self, router, training_data):
+        X, y = training_data
+        record = router.train(X, y, preset="gb_classifier")
+        assert record.name.startswith("model_")
+
+    def test_persistence_across_sessions(self, training_data, tmp_path):
+        X, y = training_data
+        # Train and save
+        router1 = MLFactorRouter(model_dir=str(tmp_path))
+        router1.train(X, y, preset="rf_classifier", name="persist_model")
+        # Create new router from same dir
+        router2 = MLFactorRouter(model_dir=str(tmp_path))
+        models = router2.list_models()
+        assert any(m.name == "persist_model" for m in models)
+        # Predict with loaded model
+        preds = router2.predict("persist_model", X)
+        assert len(preds) == len(y)
