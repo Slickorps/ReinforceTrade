@@ -13,6 +13,8 @@ Complete API documentation for the ReinforceTrade multi-agent trading system.
 - [Optimization Module](#optimization-module)
 - [Reports Module](#reports-module)
 - [Trading Module](#trading-module)
+- [Monitoring Module](#monitoring-module)
+- [ML Factor Engine](#ml-factor-engine)
 - [Configuration](#configuration)
 
 ---
@@ -922,7 +924,180 @@ class Exchange(ABC):
 ```
 
 **Implementations:**
-- `CCXTExchange` - CCXT-based exchange interface
+- `CCXTExchange` — CCXT-based multi-exchange adapter (Binance, Coinbase, etc.)
+- `IBAdapter` — Interactive Brokers TWS/Gateway adapter
+- `OANDAdapter` — OANDA REST API adapter for forex trading
+
+### BrokerFactory
+
+Unified broker adapter instantiation from configuration.
+
+```python
+from trading.broker_factory import create_exchange, list_supported_brokers
+
+# Create CCXT exchange
+exchange = create_exchange({"name": "ccxt", "exchange_id": "binance",
+                             "api_key": "...", "secret": "..."})
+# Create IB adapter
+exchange = create_exchange({"name": "ib", "host": "127.0.0.1",
+                             "port": 7497, "client_id": 1})
+# Create OANDA adapter
+exchange = create_exchange({"name": "oanda", "api_key": "...",
+                             "environment": "practice", "account_id": "..."})
+
+# List available brokers
+print(list_supported_brokers())  # ['ccxt', 'ib', 'oanda']
+```
+
+### WebSocketClient
+
+Real-time market data stream via WebSocket.
+
+```python
+from trading.websocket_client import WebSocketClient
+
+client = WebSocketClient(symbols=['BTC/USDT'], exchange_name='binance')
+client.on_message = lambda msg: print(f"Price update: {msg}")
+client.start()
+```
+
+### OrderManager
+
+Order lifecycle management with status tracking.
+
+```python
+from trading.order_manager import OrderManager
+
+manager = OrderManager(exchange)
+order = manager.place_order(symbol='BTC/USDT', side='buy', amount=0.01)
+status = manager.get_status(order['id'])
+manager.cancel(order['id'])
+```
+
+### PositionTracker
+
+Real-time position tracking with P&L calculation.
+
+```python
+from trading.position_tracker import PositionTracker
+
+tracker = PositionTracker()
+tracker.update('BTC/USDT', quantity=0.01, entry_price=50000.0, side='long')
+pnl = tracker.get_unrealized_pnl('BTC/USDT', current_price=52000.0)
+metrics = tracker.get_summary()
+```
+
+## Monitoring Module
+
+### TradeMonitor
+
+Real-time trade monitoring and metrics collection.
+
+```python
+from monitoring import TradeMonitor
+
+monitor = TradeMonitor()
+monitor.start()
+
+# Events are tracked automatically
+monitor.get_active_trades()
+monitor.get_today_pnl()
+monitor.get_win_rate()
+```
+
+### AlertManager
+
+Configurable alerting with multiple channels (email, Slack, Telegram).
+
+```python
+from monitoring import AlertManager
+
+alerts = AlertManager()
+alerts.add_rule("max_drawdown", threshold=-0.10, action="halt_trading")
+alerts.add_rule("api_error", max_count=3, window_seconds=60, action="notify")
+```
+
+### MetricsCollector & PerformanceTracker
+
+Prometheus-compatible metrics collection and performance analysis.
+
+```python
+from monitoring import MetricsCollector, PerformanceTracker
+
+collector = MetricsCollector()
+collector.record_trade(trade_dict)
+
+tracker = PerformanceTracker()
+tracker.calculate_sharpe(returns_series)
+tracker.calculate_max_drawdown(equity_curve)
+```
+
+## ML Factor Engine
+
+### MLFactor
+
+sklearn pipeline wrapper for ML-based signal generation.
+
+```python
+from ml import MLFactor
+
+# Create with preset
+mf = MLFactor(preset="rf_classifier")
+mf.add_feature("momentum", lambda df: df["close"].pct_change(20))
+mf.add_feature("volatility", lambda df: df["close"].pct_change().rolling(20).std())
+
+# Train and predict
+mf.fit(X_train, y_train)
+probs = mf.predict_proba(X_test)
+mf.save("models/my_model.joblib")
+```
+
+**Presets**: `rf_classifier`, `gb_classifier`, `lr_classifier`, `rf_regressor`, `gb_regressor`, `ridge_regressor`
+
+### WalkForwardCV
+
+Time-series-aware walk-forward validation.
+
+```python
+from ml import WalkForwardCV
+
+cv = WalkForwardCV(n_splits=5, train_size=252, test_size=63)
+
+for train_idx, test_idx in cv.split(X):
+    # Train on train_idx, evaluate on test_idx
+    pass
+```
+
+### MLFactorRouter
+
+High-level API for multi-model management.
+
+```python
+from ml import MLFactorRouter
+
+router = MLFactorRouter(model_dir="models")
+record = router.train(X, y, preset="rf_classifier", name="btc_momentum")
+predictions = router.predict("btc_momentum", X_new)
+models = router.list_models()
+router.delete_model("btc_momentum")
+```
+
+### FactorPipeline
+
+Composable alpha factor pipeline.
+
+```python
+from ml.factor_pipeline import FactorPipeline
+
+pipeline = FactorPipeline(weights={"momentum": 0.5, "volatility": 0.25, "sentiment": 0.25})
+signal = pipeline.compute(market_data)  # {"composite": 0.65, ...}
+```
+
+### Individual Factors
+
+- `MomentumFactor(roc_period=14, rsi_period=14)` — ROC, MACD, RSI signals
+- `VolatilityFactor(atr_period=14, hist_period=50)` — ATR, regime classification
+- `SentimentFactor(lookback=20)` — Volume trend, buy/sell pressure
 
 ---
 

@@ -268,6 +268,34 @@ best_params, best_score = optimizer.genetic_algorithm(
 )
 ```
 
+
+## ML Factor Signals
+
+Generate alpha signals using ML-based factor computation:
+
+```python
+from ml import MLFactor, FactorPipeline
+from ml.factor_pipeline import FactorPipeline
+
+# Composite pipeline with weighted aggregation
+pipeline = FactorPipeline(
+    weights={"momentum": 0.5, "volatility": 0.25, "sentiment": 0.25}
+)
+signal = pipeline.compute(market_data)  # {"composite": 0.42, "factors": {...}}
+
+# sklearn-powered ML factor with walk-forward training
+mf = MLFactor(preset="rf_classifier")
+mf.add_feature("returns_5d", lambda df: df["close"].pct_change(5))
+mf.add_feature("vol_20d", lambda df: df["close"].pct_change().rolling(20).std())
+
+X = mf.build_features(df)
+y = (df["close"].shift(-1) > df["close"]).astype(int)
+results = mf.walk_forward_fit(df, target_col="target")
+
+# Save trained model
+mf.save("models/my_factor.joblib")
+```
+
 ## Walk-Forward Validation
 
 Prevent overfitting with walk-forward analysis:

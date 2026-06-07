@@ -1,6 +1,12 @@
 # ReinforceTrade
 
-An AI-powered quantitative trading system featuring a **Multi-Agent Reinforcement Learning Framework** designed for transparency, robustness, and trust.
+[![Python](https://img.shields.io/badge/Python-3.8+-blue?logo=python)](https://www.python.org/)
+[![Rust](https://img.shields.io/badge/Rust-FFI-orange?logo=rust)](rust/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript)](dashboard/)
+[![Docker](https://img.shields.io/badge/Docker-multi--stage-2496ED?logo=docker)](Dockerfile)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+An AI-powered quantitative trading system featuring a **Multi-Agent Reinforcement Learning Framework** with multi-language components for high performance, real-time monitoring, and transparent decision-making.
 
 ## Overview
 
@@ -66,6 +72,17 @@ The system enters a position only when:
 - **Exposure Limits**: Maximum 10% of portfolio per trade, 20% per symbol
 - **Consecutive Loss Protection**: Reduces exposure after 3 consecutive losses
 - **Drawdown Control**: Hard stop at 20% maximum drawdown
+
+## Technology Stack
+
+| Language | Component | Purpose |
+|:--------:|:----------|:--------|
+| Python | Core engine, Agents, Strategies, Backtesting, Trading, ML, Monitoring, Web | System orchestration & business logic |
+| Rust | High-performance data engine (`rust/`, PyO3 FFI) | Batch OHLCV aggregation, financial metrics |
+| TypeScript | Real-time dashboard (`dashboard/`, WebSocket) | Live P&L, positions, and trade monitoring |
+| Go | Monitoring agent (`monitor/`) | Prometheus metrics collection |
+| Shell | Ops scripts & CI/CD (`scripts/`, `.github/`) | Automation & deployment |
+| Dockerfile | Containerization | Multi-stage build + docker-compose |
 
 ## Backtesting
 
@@ -138,6 +155,49 @@ report_dir = report_gen.generate_full_report(results)
 
 ## Project Structure
 
+```
+ReinforceTrade/
+├── agents/                 # Multi-agent RL framework (Environment, Short-Term, Trend, DecisionTower, Execution)
+├── strategies/             # Trading strategies & risk management (base, multi-agent, risk manager)
+├── backtesting/            # Backtest engine with enhanced backtester and walk-forward validation
+├── environments/           # OpenAI Gym trading environments for RL training
+├── trading/                # Exchange interfaces & real-time trading system
+│   ├── exchange.py         # Abstract Exchange base class
+│   ├── ccxt_exchange.py    # CCXT multi-exchange adapter (Binance, Coinbase, etc.)
+│   ├── ib_adapter.py       # Interactive Brokers TWS/Gateway adapter
+│   ├── oanda_adapter.py    # OANDA REST API adapter
+│   ├── broker_factory.py   # Unified broker adapter factory
+│   ├── websocket_client.py # Real-time market data streams
+│   ├── order_manager.py    # Order lifecycle management
+│   ├── position_tracker.py # Real-time position & P&L tracking
+│   ├── monitor.py          # Trade monitoring engine
+│   └── alert_channel.py    # Multi-channel alert dispatch
+├── ml/                     # ML factor engine (sklearn-powered signals)
+│   ├── ml_factor.py        # Pipeline wrapper, walk-forward CV, router
+│   ├── momentum_factor.py  # ROC, MACD, RSI momentum signals
+│   ├── volatility_factor.py# ATR, regime classification, weight multiplier
+│   ├── sentiment_factor.py # Volume trend, buy/sell pressure proxy
+│   └── factor_pipeline.py  # Weighted composite signal pipeline
+├── rust/                   # Rust high-performance data engine (PyO3 FFI)
+│   ├── Cargo.toml          # Rust project manifest
+│   └── src/lib.rs          # OHLCV aggregation, statistics, financial metrics
+├── dashboard/              # TypeScript real-time WebSocket dashboard
+│   ├── package.json        # npm project config
+│   ├── tsconfig.json       # TypeScript compiler config
+│   ├── index.ts            # Dashboard logic (tables, charts, WebSocket)
+│   └── style.css           # Dark-theme responsive styles
+├── monitor/                # Go monitoring agent (Prometheus metrics)
+├── web/                    # Flask web panel & monitoring dashboard
+├── sql/                    # PostgreSQL/SQLite schemas & stored procedures
+│   ├── init.sql            # Schema, indexes, and 6 stored procedures
+│   └── analysis_queries.sql# Complex analytical queries (10 queries)
+├── scripts/                # Shell/PowerShell automation scripts
+├── .github/workflows/      # CI/CD pipelines (ci.yml, release.yml)
+├── docs/                   # Architecture, API reference, getting started, transparency
+├── tests/                  # Unit and integration tests (14 test files)
+├── examples/               # Usage examples for all modules
+├── Dockerfile              # Multi-stage build (Rust → Go → Python)
+└── docker-compose.yml      # 5-service orchestrated deployment
 ```
 ReinforceTrade/
 ├── agents/                 # Multi-agent system

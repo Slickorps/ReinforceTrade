@@ -102,6 +102,16 @@ Each agent provides not just a signal, but a confidence score and reasoning:
 - Historical success rate in similar states
 - State feature importance
 
+#### ML Factor Engine
+**What it tells you**: "The composite factor signal is 0.65 (bullish), driven primarily by momentum (48% contribution) and supported by low volatility regime (weight multiplier: 1.2x)."
+
+**Metrics provided**:
+- Per-factor signal contribution and weight breakdown
+- Feature importance from sklearn models (RandomForest, GradientBoost)
+- Walk-forward validation metrics per time split (accuracy, precision, recall, F1)
+- Volatility regime classification and position size adjustment multiplier
+- Model metadata: training date, feature names, pipeline type
+
 ## Backtest Reports: Complete Transparency
 
 ### What You See in Every Report

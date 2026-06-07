@@ -464,14 +464,52 @@ Historical Data
 
 ## Technology Stack
 
-- **Python 3.8+**: Core language
-- **Stable Baselines3**: RL algorithms (PPO, A2C, DQN)
-- **Pandas/NumPy**: Data processing
-- **CCXT**: Exchange API integration
-- **Matplotlib/Seaborn**: Visualization
-- **Pydantic**: Configuration management
-- **Loguru**: Logging
-- **Gym**: RL environment framework
+| Component | Technology | Purpose |
+|:----------|:-----------|:--------|
+| **Core Engine** | Python 3.8+ | System orchestration, trading logic, RL agents |
+| **RL Framework** | Stable Baselines3 | PPO, A2C, DQN algorithms |
+| **Data Processing** | Pandas, NumPy | OHLCV processing, feature engineering |
+| **High-Perf Engine** | Rust (PyO3 FFI) | Batch OHLCV aggregation, statistics, financial metrics |
+| **Real-time Dashboard** | TypeScript + WebSocket | Live P&L, position, and trade monitoring |
+| **Exchange Integration** | CCXT + Custom Adapters | Binance, IB, OANDA multi-broker support |
+| **ML Factors** | scikit-learn, joblib | Momentum, volatility, sentiment signal generation |
+| **Database** | SQLite / PostgreSQL | Trade logging, backtest analytics, SQL stored procedures |
+| **Monitoring** | Prometheus + Grafana | Metrics collection, alerting, performance tracking |
+| **Containerization** | Docker, docker-compose | Multi-service deployment
+
+## Project Structure
+
+```
+ReinforceTrade/
+├── agents/                 # Multi-agent RL framework
+├── strategies/             # Trading strategies & risk management
+├── backtesting/            # Backtest engine & enhanced backtester
+├── environments/           # OpenAI Gym trading environments
+├── trading/                # Exchange interfaces & broker adapters
+│   ├── exchange.py         # Abstract Exchange base class
+│   ├── ccxt_exchange.py    # CCXT multi-exchange adapter
+│   ├── ib_adapter.py       # Interactive Brokers adapter
+│   ├── oanda_adapter.py    # OANDA adapter
+│   ├── broker_factory.py   # Factory for broker instantiation
+│   ├── websocket_client.py # Real-time market data streams
+│   ├── order_manager.py    # Order lifecycle management
+│   └── position_tracker.py # Real-time position tracking
+├── ml/                     # ML factor engine
+│   ├── ml_factor.py        # sklearn pipeline wrapper + walk-forward CV
+│   ├── momentum_factor.py  # ROC, MACD, RSI momentum signals
+│   ├── volatility_factor.py# ATR, regime classification
+│   ├── sentiment_factor.py # Volume trend, buy/sell pressure
+│   └── factor_pipeline.py  # Weighted composite signal pipeline
+├── monitoring/             # Trade monitor, alerts, metrics
+├── web/                    # Flask web panel & monitoring dashboard
+├── dashboard/              # TypeScript real-time WebSocket dashboard
+├── rust/                   # Rust high-performance data engine (PyO3)
+├── sql/                    # SQL schemas, stored procedures, analytics
+├── scripts/                # Shell/PowerShell automation scripts
+├── docs/                   # Architecture, API reference, guides
+├── tests/                  # Unit and integration tests
+└── examples/               # Usage examples for all modules
+```
 
 ## Scalability Considerations
 
