@@ -26,6 +26,15 @@ class FactorPipeline:
         sentiment: Optional[SentimentFactor] = None,
         weights: Optional[Dict[str, float]] = None,
     ):
+        """
+        Args:
+            momentum: Pre-configured MomentumFactor instance. Uses defaults if ``None``.
+            volatility: Pre-configured VolatilityFactor instance. Uses defaults if ``None``.
+            sentiment: Pre-configured SentimentFactor instance. Uses defaults if ``None``.
+            weights: Per-factor weights for composite signal. Defaults to
+                ``{"momentum": 0.5, "volatility": 0.25, "sentiment": 0.25}``.
+                Weights are automatically normalized to sum to 1.0.
+        """
         self.momentum = momentum or MomentumFactor()
         self.volatility = volatility or VolatilityFactor()
         self.sentiment = sentiment or SentimentFactor()
@@ -41,6 +50,17 @@ class FactorPipeline:
     def compute(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Compute all factors and aggregate into a composite signal in [-1, 1].
+
+        Args:
+            market_data: Dict with OHLCV data passed to each factor's ``compute``.
+                Expected keys: ``"closes"``, ``"highs"``, ``"lows"``, ``"volumes"``.
+
+        Returns:
+            Dict with keys:
+                - ``signal`` (float): Weighted composite factor signal in [-1, 1].
+                - ``factors`` (dict): Per-factor breakdown with ``signal``, ``weight``,
+                  and ``weighted`` contribution for each factor.
+                - ``weights_used`` (dict): The normalized weights applied.
         """
         factor_results = {
             "momentum": self.momentum.compute(market_data),
@@ -70,7 +90,13 @@ class FactorPipeline:
         }
 
     def update_weights(self, weights: Dict[str, float]) -> None:
-        """Dynamically adjust per-factor weights."""
+        """
+        Dynamically adjust per-factor weights.
+
+        Args:
+            weights: New weight mapping (e.g., ``{"momentum": 0.6, "volatility": 0.2}``).
+                Automatically normalized to sum to 1.0.
+        """
         total = sum(weights.values())
         if total > 0:
             self.weights = {k: v / total for k, v in weights.items()}

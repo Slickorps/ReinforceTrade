@@ -10,11 +10,29 @@ class MomentumFactor:
     """
 
     def __init__(self, roc_period: int = 14, rsi_period: int = 14):
+        """
+        Args:
+            roc_period: Lookback window for Rate-of-Change calculation.
+            rsi_period: Lookback window for RSI calculation.
+        """
         self.roc_period = roc_period
         self.rsi_period = rsi_period
         logger.info(f"MomentumFactor initialized (roc={roc_period}, rsi={rsi_period})")
 
     def compute(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Compute momentum-based alpha signal from price data.
+
+        Args:
+            market_data: Dict with ``"closes"`` key containing a list of closing prices.
+
+        Returns:
+            Dict with keys:
+                - ``signal`` (float): Composite momentum signal in [-1, 1].
+                - ``roc`` (float): Rate-of-change over ``roc_period``.
+                - ``macd_signal`` (float): MACD crossover strength normalized.
+                - ``rsi`` (float): RSI value in [0, 100].
+        """
         closes = market_data.get("closes", [])
         if len(closes) < max(self.roc_period, self.rsi_period) + 1:
             return {"signal": 0.0, "roc": 0.0, "macd_signal": 0.0, "rsi": 50.0}
@@ -52,6 +70,16 @@ class MomentumFactor:
 
     @staticmethod
     def _ema(prices: np.ndarray, period: int) -> float:
+        """
+        Compute Exponential Moving Average for a price series.
+
+        Args:
+            prices: 1-D array of price values.
+            period: EMA lookback period.
+
+        Returns:
+            The EMA value at the most recent data point.
+        """
         if len(prices) < period:
             return float(prices[-1])
         multiplier = 2.0 / (period + 1)

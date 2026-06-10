@@ -10,10 +10,31 @@ class SentimentFactor:
     """
 
     def __init__(self, lookback: int = 20):
+        """
+        Args:
+            lookback: Window size for volume trend averaging.
+        """
         self.lookback = lookback
         logger.info(f"SentimentFactor initialized (lookback={lookback})")
 
     def compute(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Compute sentiment proxy signal from OHLCV data.
+
+        Derives buying/selling pressure from volume-weighted price delta
+        (order-flow imbalance proxy) and volume trend.
+
+        Args:
+            market_data: Dict with ``"closes"``, ``"volumes"``, ``"highs"``,
+                and ``"lows"`` keys, each containing a list of values.
+
+        Returns:
+            Dict with keys:
+                - ``signal`` (float): Composite sentiment signal in [-1, 1].
+                - ``imbalance`` (float): Volume-weighted buy/sell imbalance in [-1, 1].
+                - ``pressure`` (str): One of ``"buying"``, ``"selling"``, ``"neutral"``.
+                - ``vol_trend`` (float): Current volume relative to lookback average.
+        """
         closes = market_data.get("closes", [])
         volumes = market_data.get("volumes", [])
         highs = market_data.get("highs", [])

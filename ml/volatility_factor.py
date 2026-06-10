@@ -14,11 +14,31 @@ class VolatilityFactor:
     REGIME_HIGH = "high"
 
     def __init__(self, atr_period: int = 14, hist_period: int = 50):
+        """
+        Args:
+            atr_period: Lookback window for Average True Range calculation.
+            hist_period: Lookback window for historical (log-return) volatility.
+        """
         self.atr_period = atr_period
         self.hist_period = hist_period
         logger.info(f"VolatilityFactor initialized (atr={atr_period}, hist={hist_period})")
 
     def compute(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Compute volatility regime and position-sizing weight multiplier.
+
+        Args:
+            market_data: Dict with ``"closes"``, ``"highs"``, and ``"lows"``
+                keys, each containing a list of price values.
+
+        Returns:
+            Dict with keys:
+                - ``signal`` (float): 0.3 low-vol (risk-on), 0.0 medium, -0.5 high (risk-off).
+                - ``regime`` (str): One of ``"low"``, ``"medium"``, ``"high"``.
+                - ``atr_pct`` (float): Average True Range as a fraction of current price.
+                - ``hist_vol`` (float): Standard deviation of log returns.
+                - ``weight_multiplier`` (float): 1.5 low-vol, 1.0 medium, 0.5 high.
+        """
         highs = market_data.get("highs", [])
         lows = market_data.get("lows", [])
         closes = market_data.get("closes", [])
