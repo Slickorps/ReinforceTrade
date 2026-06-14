@@ -1,13 +1,28 @@
 -- ============================================================================
--- Intelligent Strategy Trading — PostgreSQL Stored Procedures
+-- ReinforceTrade — PostgreSQL Schema & Stored Procedures
+-- ============================================================================
 --
--- This script provides:
---   1. Backtest result aggregation statistics
---   2. Trade flow analysis reports
---   3. Risk indicator calculation functions
---   4. Utility helper functions
+-- Creates the trading analytics schema with tables, indexes, and 6 stored
+-- procedures for backtest aggregation, risk metrics, drawdown detection,
+-- historical VaR, monthly performance pivots, and factor exposure analysis.
 --
--- Compatible with PostgreSQL 13+
+-- Usage:
+--     psql -h localhost -U your_user -d reinforcetrade -f sql/init.sql
+--
+-- Requires: PostgreSQL 13+, uuid-ossp extension, tablefunc extension
+--
+-- Tables:
+--     trading.backtest_results   — Backtest run metadata and aggregate metrics
+--     trading.trade_records      — Individual trade-level P&L and metadata
+--     risk.daily_risk_metrics    — Daily equity, return, VaR, and drawdown
+--
+-- Functions (6):
+--     1. trading.aggregate_backtest_summary(UUID)
+--     2. risk.calculate_strategy_risk_metrics(VARCHAR, ...)
+--     3. risk.detect_drawdown_periods(UUID)
+--     4. risk.calculate_var_historical(UUID, NUMERIC, INTEGER)
+--     5. trading.monthly_performance_pivot(VARCHAR)
+--     6. trading.factor_exposure_analysis(UUID)
 -- ============================================================================
 
 -- ────────────────────────────────────────────────────────────────────────────

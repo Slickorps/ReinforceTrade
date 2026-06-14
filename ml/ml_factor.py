@@ -93,6 +93,7 @@ class FeatureBuilder:
 
     @property
     def feature_names(self) -> List[str]:
+        """Return the list of registered feature names."""
         return list(self._features.keys())
 
     def __len__(self) -> int:
@@ -167,6 +168,7 @@ class WalkForwardCV:
         return splits
 
     def get_n_splits(self, X=None, y=None, groups=None) -> int:
+        """Return the configured number of splits (sklearn-compatible API)."""
         return self.n_splits
 
 
@@ -319,6 +321,7 @@ class MLFactor:
 
     @property
     def feature_names(self) -> List[str]:
+        """Return the list of registered feature names."""
         return self.feature_builder.feature_names
 
     # ── Training ────────────────────────────────────────────────────

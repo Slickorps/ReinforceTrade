@@ -1,17 +1,29 @@
 -- ============================================================================
--- Intelligent Strategy Trading — Complex Analytical Queries
+-- ReinforceTrade — Complex Analytical Queries (10 queries)
+-- ============================================================================
 --
--- These queries demonstrate advanced PostgreSQL analytical capabilities:
---   1. Monthly return pivot table (calendar year matrix)
---   2. Factor exposure & performance attribution
---   3. Maximum drawdown interval detection
---   4. Trade clustering & pattern analysis
---   5. Rolling risk metrics computation
---   6. Strategy performance ranking
---   7. PnL distribution analysis
---   8. Correlation matrix between strategies
+-- Ad-hoc analytical queries for backtest performance analysis, trade
+-- pattern detection, risk monitoring, and strategy comparison.
 --
--- Compatible with PostgreSQL 13+
+-- Usage:
+--     psql -h localhost -U your_user -d reinforcetrade -f sql/analysis_queries.sql
+--
+-- Note: Some queries reference placeholder UUIDs — replace
+-- ``'00000000-0000-0000-0000-000000000000'`` with an actual backtest_id.
+--
+-- Requires: PostgreSQL 13+, init.sql schema must be loaded first
+--
+-- Query catalog:
+--     1. Monthly Return Pivot (calendar year matrix with YTD)
+--     2. Factor Exposure & PnL Attribution (by signal source tag)
+--     3. Maximum Drawdown Intervals (peak → trough → recovery)
+--     4. Trade Streak & Pattern Analysis (winning/losing streaks)
+--     5. Rolling Risk Metrics (21-day and 63-day rolling stats)
+--     6. Strategy Performance Ranking (composite score + star rating)
+--     7. PnL Distribution Analysis (quartiles, skewness, kurtosis)
+--     8. Strategy Correlation Matrix (pairwise daily return correlation)
+--     9. Top/Bottom N Trades (outlier P&L analysis)
+--    10. Trade Frequency Heatmap (by hour of day × day of week)
 -- ============================================================================
 
 -- ────────────────────────────────────────────────────────────────────────────
