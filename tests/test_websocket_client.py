@@ -34,6 +34,7 @@ class TestWebSocketClient(unittest.TestCase):
     
     def setUp(self):
         """Set up test fixtures"""
+        self.exchange_name = 'mock'
         self.symbols = ['BTC/USDT', 'ETH/USDT']
         self.config = WebSocketConfig()
         
@@ -51,7 +52,7 @@ class TestWebSocketClient(unittest.TestCase):
         
     def test_init(self):
         """Test WebSocketClient initialization"""
-        client = MockWebSocket(self.symbols, self.config)
+        client = MockWebSocket(self.exchange_name, self.symbols, self.config)
         
         self.assertEqual(client.exchange_name, 'mock')
         self.assertEqual(client.symbols, self.symbols)
@@ -62,7 +63,7 @@ class TestWebSocketClient(unittest.TestCase):
         
     def test_on_ticker(self):
         """Test ticker callback registration"""
-        client = MockWebSocket(self.symbols)
+        client = MockWebSocket(self.exchange_name, self.symbols)
         
         def callback(data):
             pass
@@ -74,7 +75,7 @@ class TestWebSocketClient(unittest.TestCase):
         
     def test_on_orderbook(self):
         """Test orderbook callback registration"""
-        client = MockWebSocket(self.symbols)
+        client = MockWebSocket(self.exchange_name, self.symbols)
         
         def callback(data):
             pass
@@ -85,7 +86,7 @@ class TestWebSocketClient(unittest.TestCase):
         
     def test_on_trade(self):
         """Test trade callback registration"""
-        client = MockWebSocket(self.symbols)
+        client = MockWebSocket(self.exchange_name, self.symbols)
         
         def callback(data):
             pass
@@ -96,7 +97,7 @@ class TestWebSocketClient(unittest.TestCase):
         
     def test_on_error(self):
         """Test error callback registration"""
-        client = MockWebSocket(self.symbols)
+        client = MockWebSocket(self.exchange_name, self.symbols)
         
         def callback(error):
             pass
@@ -107,7 +108,7 @@ class TestWebSocketClient(unittest.TestCase):
         
     def test_get_price_empty(self):
         """Test getting price when cache is empty"""
-        client = MockWebSocket(self.symbols)
+        client = MockWebSocket(self.exchange_name, self.symbols)
         
         price = client.get_price('BTC/USDT')
         
@@ -115,7 +116,7 @@ class TestWebSocketClient(unittest.TestCase):
         
     def test_get_price_cached(self):
         """Test getting cached price"""
-        client = MockWebSocket(self.symbols)
+        client = MockWebSocket(self.exchange_name, self.symbols)
         client._price_cache['BTC/USDT'] = 50000.0
         
         price = client.get_price('BTC/USDT')
@@ -124,7 +125,7 @@ class TestWebSocketClient(unittest.TestCase):
         
     def test_get_last_update(self):
         """Test getting last update time"""
-        client = MockWebSocket(self.symbols)
+        client = MockWebSocket(self.exchange_name, self.symbols)
         now = datetime.now()
         client._last_update['BTC/USDT'] = now
         
@@ -134,13 +135,13 @@ class TestWebSocketClient(unittest.TestCase):
         
     def test_is_connected_false(self):
         """Test is_connected when not connected"""
-        client = MockWebSocket(self.symbols)
+        client = MockWebSocket(self.exchange_name, self.symbols)
         
         self.assertFalse(client.is_connected())
         
     def test_repr(self):
         """Test string representation"""
-        client = MockWebSocket(self.symbols)
+        client = MockWebSocket(self.exchange_name, self.symbols)
         
         repr_str = repr(client)
         

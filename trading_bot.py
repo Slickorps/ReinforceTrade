@@ -61,10 +61,7 @@ class TradingBot:
         self.symbols = symbols or settings.trading.get('symbols', ['BTC/USDT', 'ETH/USDT'])
         
         # Initialize strategy
-        self.strategy = strategy or MultiAgentStrategy(
-            agents=self.agents,
-            decision_tower=self.decision_tower
-        )
+        self.strategy = strategy or MultiAgentStrategy(use_rl=False)
         
         # Initialize risk manager
         self.risk_manager = risk_manager or RiskManager(

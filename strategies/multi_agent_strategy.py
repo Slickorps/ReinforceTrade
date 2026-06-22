@@ -20,9 +20,15 @@ class MultiAgentStrategy(BaseStrategy):
         
         # Add RL agent if enabled
         if use_rl:
-            self.rl_agent = RLAgent(agent_type='ppo')
-            self.rl_agent.load_model()
-            self.agents.append(self.rl_agent)
+            if RLAgent is None:
+                logger.warning(
+                    "RLAgent requested but stable_baselines3 is not installed. "
+                    "Running without RL agent. Install with: pip install stable-baselines3"
+                )
+            else:
+                self.rl_agent = RLAgent(agent_type='ppo')
+                self.rl_agent.load_model()
+                self.agents.append(self.rl_agent)
         
         self.decision_tower = DecisionTower(self.agents)
         self.confidence_threshold = confidence_threshold
