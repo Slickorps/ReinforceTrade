@@ -40,41 +40,43 @@ class TradingBot:
         ]
         
         # Add RL agent if configured
-        if hasattr(settings, 'rl_agent') and settings.rl_agent.get('enabled', False):
+        if settings.use_rl and RLAgent is not None:
             try:
                 rl_agent = RLAgent(
-                    model_path=settings.rl_agent.get('model_path', 'models/rl_model'),
-                    agent_type=settings.rl_agent.get('type', 'PPO')
+                    model_path="models/rl_model",
+                    agent_type="PPO"
                 )
                 self.agents.append(rl_agent)
                 logger.info("RL Agent added to trading bot")
             except Exception as e:
                 logger.warning(f"Failed to load RL agent: {e}")
-        
+
         # Initialize decision tower
         self.decision_tower = DecisionTower(self.agents)
-        
+
         # Initialize exchange
         self.exchange = exchange
-        
+
         # Initialize symbols
-        self.symbols = symbols or settings.trading.get('symbols', ['BTC/USDT', 'ETH/USDT'])
-        
+        default_symbols = ['BTC/USDT', 'ETH/USDT']
+        self.symbols = symbols or [s.strip() for s in settings.symbols.split(',')] or default_symbols
+
         # Initialize strategy
         self.strategy = strategy or MultiAgentStrategy(use_rl=False)
-        
+
         # Initialize risk manager
-        self.risk_manager = risk_manager or RiskManager(
-            max_position_size=settings.risk.get('max_position_size', 0.1),
-            max_drawdown=settings.risk.get('max_drawdown', 0.15),
-            stop_loss_pct=settings.risk.get('stop_loss', 0.05),
-            take_profit_pct=settings.risk.get('take_profit', 0.1)
-        )
-        
+        risk_kwargs = {}
+        if risk_manager is not None:
+            risk_kwargs = {
+                'max_risk_per_trade': settings.risk_per_trade,
+                'max_portfolio_risk': settings.max_position_size,
+            }
+        self.risk_manager = risk_manager or RiskManager(**risk_kwargs)
+
         # Trading state
         self.running = False
         self.trading_thread = None
-        self.interval = settings.trading.get('interval', 60)  # seconds
+        self.interval = settings.trading_interval  # seconds
         self.last_trade_time = {}
         self.trade_history = []
         self.current_positions = {}
@@ -266,9 +268,13 @@ class TradingBot:
             strength = signal.get('strength', 0.5)
             
             # Calculate position size based on signal strength
+            balance = self._get_account_balance()
+            total_balance = sum(balance.values()) if isinstance(balance, dict) else 10000.0
             position_size = self.risk_manager.calculate_position_size(
-                signal_strength=strength,
-                account_balance=self._get_account_balance()
+                balance=total_balance,
+                entry_price=current_price,
+                stop_loss=current_price * (1 - settings.stop_loss),
+                confidence=strength,
             )
             
             if position_size <= 0:

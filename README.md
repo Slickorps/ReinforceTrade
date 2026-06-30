@@ -3,6 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue?logo=python)](https://www.python.org/)
 [![Rust](https://img.shields.io/badge/Rust-FFI-orange?logo=rust)](rust/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript)](dashboard/)
+[![Go](https://img.shields.io/badge/Go-Monitor-00ADD8?logo=go)](monitor/)
 [![Docker](https://img.shields.io/badge/Docker-multi--stage-2496ED?logo=docker)](Dockerfile)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
