@@ -67,19 +67,27 @@ def _redact_sensitive(record: Dict[str, Any]) -> Dict[str, Any]:
 
 def _json_serialize(record) -> str:
     """Serialize a Loguru record as a JSON line (logstash-compatible)."""
-    subset = _redact_sensitive(record)
+    subset = _redact_sensitive(record) if isinstance(record, dict) else record
 
-    # Build structured payload
+    # Build structured payload — handle both dict and Record types
+    t = (
+        subset["time"] if isinstance(subset.get("time"), datetime)
+        else datetime.fromtimestamp(subset["time"].timestamp(), tz=timezone.utc)
+        if hasattr(subset.get("time"), "timestamp")
+        else datetime.now(timezone.utc)
+    )
     payload: Dict[str, Any] = {
-        "@timestamp": datetime.fromtimestamp(
-            record["time"].timestamp(), tz=timezone.utc
-        ).isoformat(),
-        "level": record["level"].name,
-        "logger": record["name"],
-        "message": record["message"],
-        "module": record.get("extra", {}).pop("module", record["name"]),
-        "function": record["function"],
-        "line": record["line"],
+        "@timestamp": t.isoformat(),
+        "level": subset["level"].name if hasattr(subset.get("level", ""), "name") else str(subset.get("level", "")),
+        "logger": subset["name"],
+        "message": subset["message"],
+        "module": (
+            subset.get("extra", {}).get("module")
+            if isinstance(subset.get("extra"), dict) and subset.get("extra", {}).get("module")
+            else subset["name"]
+        ),
+        "function": subset["function"],
+        "line": subset["line"],
     }
 
     # Inject trace / request IDs
@@ -91,17 +99,18 @@ def _json_serialize(record) -> str:
         payload["request_id"] = request_id
 
     # Attach extra structured fields
-    extra = record.get("extra", {})
+    extra = subset.get("extra", {})
     if extra:
         payload["extra"] = extra
 
     # Include exception info if present
-    if record.get("exception"):
+    exc = subset.get("exception")
+    if exc:
         payload["exception"] = {
-            "type": record["exception"].type.__name__,
-            "value": str(record["exception"].value),
+            "type": exc.type.__name__,
+            "value": str(exc.value),
             "traceback": "".join(
-                record["exception"].format_traceback() or []
+                exc.format_traceback() or []
             ),
         }
 
@@ -125,9 +134,9 @@ def _console_format(record) -> str:
     tid = _trace_id.get()
     rid = _request_id.get()
     if tid:
-        trace = f" <dim>[{tid[:8]}]{'</dim>' if True else ''}"
+        trace = f" <dim>[{tid[:8]}]</dim>"
     if rid:
-        trace += f" <dim>[{rid[:8]}]{'</dim>' if True else ''}"
+        trace += f" <dim>[{rid[:8]}]</dim>"
 
     # Use Loguru's built-in markup
     return (
