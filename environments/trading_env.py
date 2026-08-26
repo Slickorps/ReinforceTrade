@@ -1,7 +1,7 @@
-import gym
+import gymnasium as gym
 import numpy as np
 import pandas as pd
-from gym import spaces
+from gymnasium import spaces
 from typing import Dict, Any, List
 
 class TradingEnvironment(gym.Env):
@@ -29,14 +29,15 @@ class TradingEnvironment(gym.Env):
 
         self.reset()
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
         self.current_step = 0
         self.balance = self.initial_balance
         self.position = 0  # 0: no position, 1: long, -1: short
         self.position_size = 0
         self.total_pnl = 0
 
-        return self._get_observation()
+        return self._get_observation(), {}
 
     def step(self, action):
         current_data = self.data[self.current_step]
@@ -85,12 +86,13 @@ class TradingEnvironment(gym.Env):
         self.total_pnl = self.balance - self.initial_balance + unrealized_pnl
 
         self.current_step += 1
-        done = self.current_step >= len(self.data) - 1
+        terminated = self.current_step >= len(self.data) - 1
+        truncated = False
 
         # Reward is the change in total portfolio value
         next_obs = self._get_observation()
 
-        return next_obs, reward, done, {"total_pnl": self.total_pnl, "balance": self.balance}
+        return next_obs, reward, terminated, truncated, {"total_pnl": self.total_pnl, "balance": self.balance}
 
     def _get_observation(self):
         if self.current_step >= len(self.data):
@@ -107,5 +109,5 @@ class TradingEnvironment(gym.Env):
             volume
         ], dtype=np.float32)
 
-    def render(self, mode='human'):
+    def render(self):
         print(f"Step: {self.current_step}, Balance: {self.balance:.2f}, Position: {self.position}, Total PnL: {self.total_pnl:.2f}")

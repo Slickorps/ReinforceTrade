@@ -91,13 +91,14 @@ class TrainingPipeline:
 
         env = self.prepare_environment(test_data)
 
-        obs = env.reset()
+        obs, _ = env.reset()
         total_reward = 0
         done = False
 
         while not done:
             action, _ = self.agent.model.predict(obs, deterministic=True)
-            obs, reward, done, info = env.step(action)
+            obs, reward, terminated, truncated, info = env.step(action)
+            done = terminated or truncated
             total_reward += reward
 
         logger.info(f"Evaluation completed. Total reward on test data: {total_reward}")

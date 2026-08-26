@@ -95,14 +95,15 @@ def train_rl_agent_example():
             transaction_fee=0.001
         )
         
-        obs = test_env.reset()
+        obs, _ = test_env.reset()
         total_reward = 0
         done = False
         steps = 0
         
         while not done and steps < 1000:
             action, _ = rl_agent.model.predict(obs, deterministic=True)
-            obs, reward, done, info = test_env.step(action)
+            obs, reward, terminated, truncated, info = test_env.step(action)
+            done = terminated or truncated
             total_reward += reward
             steps += 1
         

@@ -1,7 +1,8 @@
 try:
-    from pydantic_settings import BaseSettings
+    from pydantic_settings import BaseSettings, SettingsConfigDict
 except ImportError:
     from pydantic import BaseSettings
+    SettingsConfigDict = None
 import os
 
 class Settings(BaseSettings):
@@ -19,7 +20,10 @@ class Settings(BaseSettings):
     trading_interval: int = int(os.getenv("TRADING_INTERVAL", "60"))
     use_rl: bool = os.getenv("USE_RL", "false").lower() in ("true", "1", "yes")
 
-    class Config:
-        env_file = ".env"
+    if SettingsConfigDict is not None:
+        model_config = SettingsConfigDict(env_file=".env")
+    else:
+        class Config:
+            env_file = ".env"
 
 settings = Settings()
