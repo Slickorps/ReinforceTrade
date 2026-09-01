@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import Mock, patch, MagicMock
+import time
 import pytest
 from trading import CCXTExchange
 
@@ -188,6 +189,18 @@ class TestCCXTExchange(unittest.TestCase):
         mock_exchange = Mock()
         mock_exchange.load_markets.return_value = {}
         mock_exchange.fetch_balance.return_value = {'free': {'USDT': 100.0}}  # Not enough
+        mock_exchange.fetch_ticker.return_value = {
+            'symbol': 'BTC/USDT',
+            'last': 50000.0,
+            'bid': 49999.0,
+            'ask': 50001.0,
+            'high': 51000.0,
+            'low': 49000.0,
+            'baseVolume': 100.0,
+            'change': 1000.0,
+            'percentage': 2.0,
+            'timestamp': 1234567890000
+        }
         mock_ccxt.binance.return_value = mock_exchange
         
         exchange = CCXTExchange(self.api_key, self.secret, self.exchange_name)

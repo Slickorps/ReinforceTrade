@@ -6,10 +6,12 @@ class RiskManager:
     Risk management system for trading operations.
     Implements position sizing, exposure limits, and risk monitoring.
     """
-    def __init__(self, max_risk_per_trade: float = 0.01, max_portfolio_risk: float = 0.05, max_correlation: float = 0.7):
+    def __init__(self, max_risk_per_trade: float = 0.01, max_portfolio_risk: float = 0.05, max_correlation: float = 0.7,
+                 max_drawdown: float = 0.15):
         self.max_risk_per_trade = max_risk_per_trade  # 1% max risk per trade
         self.max_portfolio_risk = max_portfolio_risk  # 5% max portfolio risk
         self.max_correlation = max_correlation
+        self.max_drawdown = max_drawdown  # 15% max drawdown limit
         self.current_exposure = {}
         self.trade_history = []
         

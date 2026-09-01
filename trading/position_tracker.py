@@ -1,8 +1,9 @@
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 from threading import Lock
+import uuid
 from utils.logger import logger
 
 
@@ -30,7 +31,12 @@ class Position:
     closed_at: Optional[datetime] = None
     trades: List[Dict] = field(default_factory=list)
     fees: float = 0.0
-    
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+
+    def __post_init__(self):
+        if self.current_price == 0.0:
+            self.current_price = self.entry_price
+
     @property
     def is_active(self) -> bool:
         """Check if position is still active"""
@@ -147,6 +153,7 @@ class Position:
     def to_dict(self) -> Dict[str, Any]:
         """Convert position to dictionary"""
         return {
+            'id': self.id,
             'symbol': self.symbol,
             'side': self.side,
             'size': self.size,

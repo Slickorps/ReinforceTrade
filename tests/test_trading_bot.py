@@ -174,6 +174,7 @@ class TestTradingBot(unittest.TestCase):
     def test_execute_trade_buy(self):
         """Test executing buy trade"""
         mock_exchange = Mock(spec=CCXTExchange)
+        mock_exchange.get_ticker.return_value = {'price': 50000.0}
         mock_exchange.place_order.return_value = {
             'id': '12345',
             'amount': 0.1,

@@ -86,7 +86,8 @@ class TradingBot:
         self.total_trades = 0
         self.winning_trades = 0
         self.losing_trades = 0
-        self.total_pnl = 0.0
+        self._total_pnl = 0.0
+        self._peak_pnl = 0.0
         
         # Setup signal handlers for graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -236,8 +237,8 @@ class TradingBot:
                 abs(pos.get('size', 0)) for pos in self.current_positions.values()
             )
             
-            if total_exposure > self.risk_manager.max_position_size:
-                logger.warning(f"Total exposure {total_exposure} exceeds limit {self.risk_manager.max_position_size}")
+            if total_exposure > self.risk_manager.max_portfolio_risk:
+                logger.warning(f"Total exposure {total_exposure} exceeds limit {self.risk_manager.max_portfolio_risk}")
                 return False
             
             # Check drawdown
@@ -266,6 +267,13 @@ class TradingBot:
         try:
             action = signal.get('action')
             strength = signal.get('strength', 0.5)
+            
+            # Get current market price
+            ticker = self.exchange.get_ticker(symbol)
+            if not ticker or not ticker.get('price'):
+                logger.error(f"Failed to get current price for {symbol}")
+                return False
+            current_price = ticker['price']
             
             # Calculate position size based on signal strength
             balance = self._get_account_balance()
@@ -336,17 +344,21 @@ class TradingBot:
     
     def _calculate_drawdown(self) -> float:
         """Calculate current drawdown from peak"""
-        if self.total_pnl <= 0:
+        if self._peak_pnl <= 0:
             return 0.0
         
-        peak = max(0, self.total_pnl)
-        if peak == 0:
-            return 0.0
-        
-        current = self.total_pnl
-        drawdown = (peak - current) / peak if peak > 0 else 0
-        
-        return drawdown
+        return (self._peak_pnl - self.total_pnl) / self._peak_pnl
+    
+    @property
+    def total_pnl(self) -> float:
+        """Current total PnL"""
+        return self._total_pnl
+    
+    @total_pnl.setter
+    def total_pnl(self, value: float) -> None:
+        """Set total PnL and track peak for drawdown calculation"""
+        self._total_pnl = value
+        self._peak_pnl = max(self._peak_pnl, value)
     
     def _update_positions(self) -> None:
         """Update current positions from exchange"""

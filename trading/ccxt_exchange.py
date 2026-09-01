@@ -132,6 +132,12 @@ class CCXTExchange(Exchange):
             if side == 'buy':
                 # For buy orders, check quote currency balance
                 quote_currency = symbol.split('/')[1]
+                
+                # For market orders, estimate order cost using current price
+                if price is None:
+                    ticker = self.get_ticker(symbol)
+                    price = ticker.get('price')
+                
                 required_balance = amount * (price or 0)
                 balance = self.get_balance()
                 available_balance = balance.get(quote_currency, 0)

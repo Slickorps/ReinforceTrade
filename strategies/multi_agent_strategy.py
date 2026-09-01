@@ -106,8 +106,8 @@ class MultiAgentStrategy(BaseStrategy):
         Higher confidence = larger position size.
         """
         base_size = balance * self.max_position_size
-        # Scale by confidence (linear scaling, could be modified)
-        size_multiplier = min(confidence / self.confidence_threshold, 1.5)
+        # Scale by confidence (linear scaling, capped at max position size)
+        size_multiplier = min(confidence / self.confidence_threshold, 1.0)
         position_size = base_size * size_multiplier
         
         logger.debug(f"Calculated position size: {position_size} (multiplier: {size_multiplier:.2f})")

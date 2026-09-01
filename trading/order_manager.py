@@ -356,7 +356,7 @@ class OrderManager:
         orders_to_cancel = []
         
         with self._lock:
-            for order_id, order in list(self._open_orders.items()):
+            for order_id, order in list(self._open_orders.items()) + list(self._pending_orders.items()):
                 if symbol is None or order.symbol == symbol:
                     orders_to_cancel.append(order_id)
         

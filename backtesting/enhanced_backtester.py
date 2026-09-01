@@ -157,9 +157,27 @@ class EnhancedBacktester(Backtester):
         total_trades = len(self.trades)
         if total_trades == 0:
             return {
-                'total_trades': 0,
+                'initial_balance': self.initial_balance,
                 'final_balance': self.balance,
-                'total_return': 0
+                'total_return': 0,
+                'total_return_pct': 0,
+                'total_trades': 0,
+                'winning_trades': 0,
+                'losing_trades': 0,
+                'win_rate': 0,
+                'win_rate_pct': 0,
+                'avg_win': 0,
+                'avg_loss': 0,
+                'profit_factor': 0,
+                'sharpe_ratio': 0,
+                'max_drawdown': 0,
+                'max_drawdown_pct': 0,
+                'calmar_ratio': 0,
+                'total_pnl': 0,
+                'trades': [],
+                'equity_curve': self.equity_curve,
+                'risk_metrics': self.risk_manager.get_risk_metrics(),
+                'agent_signals_sample': self.agent_signals_history[:10]
             }
 
         winning_trades = [t for t in self.trades if t['pnl'] > 0]
