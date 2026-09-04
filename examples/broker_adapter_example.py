@@ -37,6 +37,11 @@ from typing import Dict, Any
 # Add project root to path so we can import trading modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Windows consoles often use a legacy code page (e.g. GBK) that cannot encode
+# the box/emoji glyphs used below; force UTF-8 output where supported.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 
 def print_separator(title: str) -> None:
     """Print a formatted section separator."""

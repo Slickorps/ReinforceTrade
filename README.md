@@ -161,7 +161,7 @@ ReinforceTrade/
 ├── agents/                 # Multi-agent RL framework (Environment, Short-Term, Trend, DecisionTower, Execution)
 ├── strategies/             # Trading strategies & risk management (base, multi-agent, risk manager)
 ├── backtesting/            # Backtest engine with enhanced backtester and walk-forward validation
-├── environments/           # OpenAI Gym trading environments for RL training
+├── environments/           # Gymnasium trading environments for RL training
 ├── trading/                # Exchange interfaces & real-time trading system
 │   ├── exchange.py         # Abstract Exchange base class
 │   ├── ccxt_exchange.py    # CCXT multi-exchange adapter (Binance, Coinbase, etc.)

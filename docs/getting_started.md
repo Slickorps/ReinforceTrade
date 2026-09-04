@@ -191,11 +191,10 @@ from agents import RLAgent
 # Create RL agent
 rl_agent = RLAgent(agent_type='ppo')
 
-# Train the agent
+# Train the agent (requires stable-baselines3)
 rl_agent.train(
     env=env,
-    total_timesteps=100000,    # Training steps
-    check_freq=10000           # Save checkpoint every 10k steps
+    total_timesteps=100000     # Training steps
 )
 
 print("Training completed!")
@@ -331,7 +330,7 @@ validator.save_validation_report("optimization/walk_forward_report.json")
 ### Step 1: Configure Exchange Connection
 
 ```python
-from trading import Exchange
+from trading import CCXTExchange
 from config import settings
 
 # Initialize exchange connection

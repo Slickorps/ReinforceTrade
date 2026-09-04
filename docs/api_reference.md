@@ -391,19 +391,18 @@ class MultiAgentStrategy(BaseStrategy):
     def __init__(
         self,
         use_rl: bool = True,
-        confidence_threshold: float = 0.6,
-        max_position_size: float = 0.1,
-        stop_loss_pct: float = 0.05,
-        take_profit_pct: float = 0.10
+        confidence_threshold: float = 0.6
     )
 ```
 
 **Parameters:**
 - `use_rl` (`bool`): Include RL agent in decision making
 - `confidence_threshold` (`float`): Minimum confidence to trade (0-1)
-- `max_position_size` (`float`): Maximum position as fraction of balance (0-1)
-- `stop_loss_pct` (`float`): Stop loss percentage (0-1)
-- `take_profit_pct` (`float`): Take profit percentage (0-1)
+
+**Instance Attributes:**
+- `max_position_size` (`float`): Maximum position as fraction of balance (0.1)
+- `stop_loss_pct` (`float`): Stop loss percentage (0.05)
+- `take_profit_pct` (`float`): Take profit percentage (0.10)
 
 **Methods:**
 
@@ -431,10 +430,7 @@ from strategies import MultiAgentStrategy
 
 strategy = MultiAgentStrategy(
     use_rl=True,
-    confidence_threshold=0.65,
-    max_position_size=0.1,
-    stop_loss_pct=0.05,
-    take_profit_pct=0.10
+    confidence_threshold=0.65
 )
 
 # Check entry
@@ -594,16 +590,15 @@ Generate comprehensive backtest report with visualizations.
 
 ### TradingEnvironment
 
-OpenAI Gym-compatible trading environment for RL training.
+Gymnasium-compatible trading environment for RL training.
 
 ```python
-class TradingEnvironment(gym.Env):
+class TradingEnvironment(gymnasium.Env):
     def __init__(
         self,
         data: List[Dict],
         initial_balance: float = 10000,
-        transaction_fee: float = 0.001,
-        max_position: float = 1.0
+        transaction_fee: float = 0.001
     )
 ```
 
@@ -611,7 +606,6 @@ class TradingEnvironment(gym.Env):
 - `data` (`List[Dict]`): OHLCV price data
 - `initial_balance` (`float`): Starting capital
 - `transaction_fee` (`float`): Transaction cost per trade (default: 0.001)
-- `max_position` (`float`): Maximum position size (default: 1.0)
 
 **Action Space:**
 ```python
@@ -623,18 +617,20 @@ self.action_space = spaces.Discrete(3)
 ```python
 # Continuous: [balance, position, current_price, volume]
 self.observation_space = spaces.Box(
-    low=0, high=np.inf, shape=(4,), dtype=np.float32
+    low=np.array([0, -1, 0, 0]),
+    high=np.array([np.inf, 1, np.inf, np.inf]),
+    dtype=np.float32
 )
 ```
 
 **Methods:**
 
-#### `reset() -> np.ndarray`
+#### `reset(seed=None, options=None) -> Tuple[np.ndarray, Dict]`
 Reset environment to initial state.
 
-**Returns:** Initial observation.
+**Returns:** `(observation, info)` tuple per the Gymnasium API.
 
-#### `step(action: int) -> Tuple[np.ndarray, float, bool, Dict]`
+#### `step(action: int) -> Tuple[np.ndarray, float, bool, bool, Dict]`
 Execute one timestep.
 
 **Parameters:**
@@ -643,7 +639,8 @@ Execute one timestep.
 **Returns:**
 - `observation` (`np.ndarray`): New state
 - `reward` (`float`): Reward for action
-- `done` (`bool`): Whether episode ended
+- `terminated` (`bool`): Whether episode ended
+- `truncated` (`bool`): Whether episode was truncated
 - `info` (`Dict`): Additional information
 
 **Example:**
@@ -651,12 +648,12 @@ Execute one timestep.
 from environments import TradingEnvironment
 
 env = TradingEnvironment(data, initial_balance=10000)
-obs = env.reset()
+obs, info = env.reset()
 
 for _ in range(1000):
     action = 1  # Buy
-    obs, reward, done, info = env.step(action)
-    if done:
+    obs, reward, terminated, truncated, info = env.step(action)
+    if terminated or truncated:
         break
 ```
 
@@ -966,12 +963,18 @@ client.start()
 Order lifecycle management with status tracking.
 
 ```python
-from trading.order_manager import OrderManager
+from trading import OrderManager, OrderSide, OrderType
 
 manager = OrderManager(exchange)
-order = manager.place_order(symbol='BTC/USDT', side='buy', amount=0.01)
-status = manager.get_status(order['id'])
-manager.cancel(order['id'])
+order = manager.create_order(
+    symbol='BTC/USDT',
+    side=OrderSide.BUY,
+    order_type=OrderType.MARKET,
+    amount=0.01
+)
+manager.submit_order(order.id)      # Send to exchange
+status = manager.get_order(order.id)
+manager.cancel_order(order.id)      # Cancel while still active
 ```
 
 ### PositionTracker
@@ -979,30 +982,35 @@ manager.cancel(order['id'])
 Real-time position tracking with P&L calculation.
 
 ```python
-from trading.position_tracker import PositionTracker
+from trading import PositionTracker
 
 tracker = PositionTracker()
-tracker.update('BTC/USDT', quantity=0.01, entry_price=50000.0, side='long')
-pnl = tracker.get_unrealized_pnl('BTC/USDT', current_price=52000.0)
-metrics = tracker.get_summary()
+tracker.create_position(
+    symbol='BTC/USDT',
+    side='long',
+    size=0.01,
+    entry_price=50000.0
+)
+tracker.update_position_price('BTC/USDT', 52000.0)
+position = tracker.get_position('BTC/USDT')
+print(position.unrealized_pnl)      # Unrealized PnL
+metrics = tracker.get_position_summary()
 ```
 
 ## Monitoring Module
 
 ### TradeMonitor
 
-Real-time trade monitoring and metrics collection.
+Real-time trade monitoring and metrics collection. Wire it to your `OrderManager`/`PositionTracker` and it records events automatically.
 
 ```python
-from monitoring import TradeMonitor
+from trading import TradeMonitor
 
 monitor = TradeMonitor()
-monitor.start()
+monitor.record_pnl_snapshot()
 
-# Events are tracked automatically
-monitor.get_active_trades()
-monitor.get_today_pnl()
-monitor.get_win_rate()
+stats = monitor.get_statistics()   # PnL, drawdown, win rate, etc.
+events = monitor.get_recent_events(10)
 ```
 
 ### AlertManager
@@ -1010,11 +1018,14 @@ monitor.get_win_rate()
 Configurable alerting with multiple channels (email, Slack, Telegram).
 
 ```python
-from monitoring import AlertManager
+from trading import AlertManager, ConsoleAlertChannel
 
 alerts = AlertManager()
-alerts.add_rule("max_drawdown", threshold=-0.10, action="halt_trading")
-alerts.add_rule("api_error", max_count=3, window_seconds=60, action="notify")
+alerts.add_channel(ConsoleAlertChannel())
+
+# Alert channels receive events via AlertManager.handle_event / send_alert
+alerts.handle_event(event)
+alerts.send_alert(alert)
 ```
 
 ### MetricsCollector & PerformanceTracker
@@ -1022,14 +1033,17 @@ alerts.add_rule("api_error", max_count=3, window_seconds=60, action="notify")
 Prometheus-compatible metrics collection and performance analysis.
 
 ```python
-from monitoring import MetricsCollector, PerformanceTracker
+from trading import MetricsCollector, PerformanceTracker
 
 collector = MetricsCollector()
-collector.record_trade(trade_dict)
-
 tracker = PerformanceTracker()
-tracker.calculate_sharpe(returns_series)
-tracker.calculate_max_drawdown(equity_curve)
+
+tracker.start()
+# ... run your trading session, recording snapshots ...
+tracker.stop()
+
+summary = collector.get_summary()
+performance = tracker.get_performance_summary()
 ```
 
 ## ML Factor Engine

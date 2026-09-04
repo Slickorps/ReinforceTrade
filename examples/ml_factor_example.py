@@ -10,9 +10,15 @@ These can be used standalone or combined via FactorPipeline
 and integrated into MultiAgentStrategy.
 """
 
+import sys
 import numpy as np
 from ml import MomentumFactor, VolatilityFactor, SentimentFactor, FactorPipeline
 from strategies import MultiAgentStrategy
+
+# Windows consoles often use a legacy code page (e.g. GBK) that cannot encode
+# the arrow/box glyphs used below; force UTF-8 output where supported.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
 def generate_sample_data(bars: int = 100, trend: float = 0.0) -> dict:

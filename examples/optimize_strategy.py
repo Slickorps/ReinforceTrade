@@ -7,6 +7,11 @@ This example shows how to optimize strategy parameters using grid search and gen
 import sys
 sys.path.insert(0, '..')
 
+# Windows consoles often use a legacy code page (e.g. GBK) that cannot encode
+# emoji glyphs used below; force UTF-8 output where supported.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 from optimization import StrategyOptimizer, WalkForwardValidator
 from utils import logger
 import numpy as np

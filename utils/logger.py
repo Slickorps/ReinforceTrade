@@ -65,8 +65,8 @@ def _redact_sensitive(record: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 
-def _json_serialize(record) -> str:
-    """Serialize a Loguru record as a JSON line (logstash-compatible)."""
+def _json_line(record) -> str:
+    """Serialize a Loguru record dict to a single JSON line (logstash-compatible)."""
     subset = _redact_sensitive(record) if isinstance(record, dict) else record
 
     # Build structured payload — handle both dict and Record types
@@ -76,9 +76,11 @@ def _json_serialize(record) -> str:
         if hasattr(subset.get("time"), "timestamp")
         else datetime.now(timezone.utc)
     )
+    level = subset.get("level", {})
+    level_name = level.get("name", "") if isinstance(level, dict) else str(level)
     payload: Dict[str, Any] = {
         "@timestamp": t.isoformat(),
-        "level": subset["level"].name if hasattr(subset.get("level", ""), "name") else str(subset.get("level", "")),
+        "level": level_name,
         "logger": subset["name"],
         "message": subset["message"],
         "module": (
@@ -106,15 +108,41 @@ def _json_serialize(record) -> str:
     # Include exception info if present
     exc = subset.get("exception")
     if exc:
+        exc_type = getattr(exc, "type", None)
+        tb = getattr(exc, "traceback", None)
+        tb_text = ""
+        if tb is not None:
+            fmt = getattr(tb, "format", None)
+            try:
+                tb_text = "".join(fmt() if fmt else [str(tb)])
+            except Exception:
+                tb_text = str(tb)
+        if not tb_text:
+            legacy_fmt = getattr(exc, "format_traceback", None)
+            try:
+                tb_text = "".join(legacy_fmt() or []) if legacy_fmt else ""
+            except Exception:
+                tb_text = ""
         payload["exception"] = {
-            "type": exc.type.__name__,
-            "value": str(exc.value),
-            "traceback": "".join(
-                exc.format_traceback() or []
-            ),
+            "type": getattr(exc_type, "__name__", str(exc_type)),
+            "value": str(getattr(exc, "value", "")),
+            "traceback": tb_text,
         }
 
     return json.dumps(payload, default=str) + "\n"
+
+
+def _json_sink(message) -> None:
+    """Sink writing custom JSON lines for the ELK-compatible file.
+
+    Registered as a callable sink (not a ``format``) so the JSON text is
+    never re-parsed by Loguru's colorizer / ``format_map`` pipeline.
+    """
+    try:
+        with LOG_FILE_JSON.open("a", encoding="utf-8") as fh:
+            fh.write(_json_line(message.record))
+    except OSError:
+        pass
 
 
 def _console_format(record) -> str:
@@ -223,15 +251,11 @@ class _StructuredLogger:
 _base_logger.remove()  # Remove default handler
 
 # Sink 1: File — JSON (ELK / logstash compatible)
-# Rotates daily, retains 30 days
+# Written by a callable sink so output bypasses Loguru's format/colorizer
+# pipeline (custom JSON must not be re-parsed as markup).
 _base_logger.add(
-    str(LOG_FILE_JSON),
-    format=_json_serialize,
+    _json_sink,
     level=settings.log_level,
-    rotation="1 day",
-    retention="30 days",
-    compression="gz",
-    serialize=False,
     enqueue=True,       # thread-safe
     backtrace=True,
     diagnose=False,
