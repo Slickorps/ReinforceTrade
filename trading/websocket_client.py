@@ -25,12 +25,12 @@ class WebSocketClient(ABC):
     Provides common functionality for exchange WebSocket connections.
     """
     
-    def __init__(self, exchange_name: str, symbols: List[str], config: WebSocketConfig = None):
+    def __init__(self, exchange_name: str, symbols: List[str], config: Optional[WebSocketConfig] = None):
         self.exchange_name = exchange_name
         self.symbols = symbols
         self.config = config or WebSocketConfig()
         
-        self.websocket: Optional[websockets.WebSocketClientProtocol] = None
+        self.websocket: Optional[Any] = None
         self.running = False
         self.connected = False
         self.reconnect_count = 0
@@ -296,7 +296,7 @@ class WebSocketClient(ABC):
 class BinanceWebSocket(WebSocketClient):
     """Binance WebSocket client implementation"""
     
-    def __init__(self, symbols: List[str], config: WebSocketConfig = None):
+    def __init__(self, symbols: List[str], config: Optional[WebSocketConfig] = None):
         super().__init__('binance', symbols, config)
         self.base_url = "wss://stream.binance.com:9443/ws"
         
@@ -365,7 +365,7 @@ class BinanceWebSocket(WebSocketClient):
                 return f"{base.upper()}/{quote.upper()}"
         return symbol_part.upper()
     
-    def _parse_ticker(self, data: Dict, symbol: str = None) -> Dict:
+    def _parse_ticker(self, data: Dict, symbol: Optional[str] = None) -> Dict:
         """Parse ticker data into standard format"""
         if not symbol:
             symbol = data.get('s', 'UNKNOWN')
@@ -389,7 +389,7 @@ class BinanceWebSocket(WebSocketClient):
 class OKXWebSocket(WebSocketClient):
     """OKX WebSocket client implementation"""
     
-    def __init__(self, symbols: List[str], config: WebSocketConfig = None):
+    def __init__(self, symbols: List[str], config: Optional[WebSocketConfig] = None):
         super().__init__('okx', symbols, config)
         self.base_url = "wss://ws.okex.com:8443/ws/v5/public"
         

@@ -103,7 +103,7 @@ class CCXTExchange(Exchange):
             return {}
     
     def place_order(self, symbol: str, side: str, amount: float, 
-                   price: float = None, order_type: str = 'market') -> Dict[str, Any]:
+                   price: Optional[float] = None, order_type: str = 'market') -> Dict[str, Any]:
         """
         Place a trading order.
         
@@ -278,7 +278,7 @@ class CCXTExchange(Exchange):
             logger.error(f"Failed to get market data for {symbol}: {e}")
             return []
     
-    def get_trading_fees(self) -> Dict[str, float]:
+    def get_trading_fees(self) -> Dict[str, Any]:
         """
         Get trading fees for the exchange.
         

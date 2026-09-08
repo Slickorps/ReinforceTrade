@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 class Exchange(ABC):
     @abstractmethod
@@ -15,7 +15,7 @@ class Exchange(ABC):
         pass
 
     @abstractmethod
-    def place_order(self, symbol: str, side: str, amount: float, price: float = None) -> Dict[str, Any]:
+    def place_order(self, symbol: str, side: str, amount: float, price: Optional[float] = None) -> Dict[str, Any]:
         pass
 
     @abstractmethod

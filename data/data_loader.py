@@ -21,7 +21,7 @@ class DataLoader:
         else:
             self.exchange = getattr(ccxt, exchange_name)()
 
-    def load_from_csv(self, filepath: str, date_column: str = 'timestamp', price_columns: List[str] = None) -> List[Dict[str, Any]]:
+    def load_from_csv(self, filepath: str, date_column: str = 'timestamp', price_columns: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """
         Load data from CSV file.
         Expected columns: timestamp, open, high, low, close, volume

@@ -1,22 +1,21 @@
 from stable_baselines3 import PPO, A2C, DQN
-from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.callbacks import BaseCallback
-from environments.trading_env import TradingEnvironment
 from .base_agent import BaseAgent
-from typing import Dict, Any, List
+from typing import Dict, Any, Optional
 from utils.logger import logger
 import os
+import numpy as np
 
 class RLAgent(BaseAgent):
     """
     Reinforcement Learning agent using Stable Baselines3.
     Can be trained on trading environments and used for signal generation.
     """
-    def __init__(self, agent_type: str = 'ppo', model_path: str = None):
+    def __init__(self, agent_type: str = 'ppo', model_path: Optional[str] = None):
         super().__init__(f"RLAgent_{agent_type}")
         self.agent_type = agent_type
         self.model_path = model_path or f"models/{agent_type}_model.zip"
-        self.model = None
+        self.model: Optional[Any] = None
 
         # Ensure models directory exists
         os.makedirs('models', exist_ok=True)
@@ -40,22 +39,23 @@ class RLAgent(BaseAgent):
             self.model.save(self.model_path)
             logger.info(f"Saved model to {self.model_path}")
 
-    def train(self, env, total_timesteps: int = 100000, callback: BaseCallback = None):
+    def train(self, env, total_timesteps: int = 100000, callback: Optional[BaseCallback] = None):
         """
         Train the RL agent on the given environment.
         """
         logger.info(f"Starting training for {total_timesteps} timesteps")
 
         if self.agent_type.upper() == 'PPO':
-            self.model = PPO('MlpPolicy', env, verbose=1)
+            model = PPO('MlpPolicy', env, verbose=1)
         elif self.agent_type.upper() == 'A2C':
-            self.model = A2C('MlpPolicy', env, verbose=1)
+            model = A2C('MlpPolicy', env, verbose=1)
         elif self.agent_type.upper() == 'DQN':
-            self.model = DQN('MlpPolicy', env, verbose=1)
+            model = DQN('MlpPolicy', env, verbose=1)
         else:
             raise ValueError(f"Unsupported agent type: {self.agent_type}")
 
-        self.model.learn(total_timesteps=total_timesteps, callback=callback)
+        self.model = model
+        model.learn(total_timesteps=total_timesteps, callback=callback)
         self.save_model()
         logger.info("Training completed")
 
@@ -71,8 +71,8 @@ class RLAgent(BaseAgent):
                 logger.error("No trained model available")
                 return {"signal": "hold", "strength": 0}
 
-        # Create observation from market data
-        obs = self._create_observation(market_data)
+        # Create observation from the analysis payload (may hold price history)
+        obs = self._create_observation(analysis)
 
         # Get action from model
         action, _ = self.model.predict(obs, deterministic=True)
@@ -80,7 +80,7 @@ class RLAgent(BaseAgent):
         # Convert action to signal
         if action == 0:  # hold
             signal = "hold"
-            strength = 0
+            strength = 0.0
         elif action == 1:  # buy
             signal = "buy"
             strength = 0.8
@@ -89,7 +89,7 @@ class RLAgent(BaseAgent):
             strength = 0.8
         else:
             signal = "hold"
-            strength = 0
+            strength = 0.0
 
         return {"signal": signal, "strength": strength, "action": action}
 

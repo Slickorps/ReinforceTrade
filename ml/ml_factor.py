@@ -427,12 +427,14 @@ class MLFactor:
         """Predict labels (classification) or values (regression)."""
         if not self._fitted:
             raise RuntimeError("Model not fitted. Call fit() first.")
+        assert self._pipeline is not None
         return self._pipeline.predict(X)
 
     def predict_proba(self, X: Union[pd.DataFrame, np.ndarray]) -> np.ndarray:
         """Predict class probabilities (classification only)."""
         if not self._fitted:
             raise RuntimeError("Model not fitted. Call fit() first.")
+        assert self._pipeline is not None
         if not self._is_classifier:
             raise TypeError("predict_proba is only available for classification models")
         return self._pipeline.predict_proba(X)
@@ -445,6 +447,7 @@ class MLFactor:
         """Return accuracy (classifier) or R² (regressor)."""
         if not self._fitted:
             raise RuntimeError("Model not fitted. Call fit() first.")
+        assert self._pipeline is not None
         return self._pipeline.score(X, y)
 
     def evaluate(
@@ -689,7 +692,6 @@ class MLFactorRouter:
 
         # Try to load from disk
         model_path = self.model_dir / f"{model_name}.joblib"
-        meta_path = self.model_dir / f"{model_name}.json"
 
         if model_path.exists():
             mf = MLFactor(name=model_name, model_dir=str(self.model_dir))

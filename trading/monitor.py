@@ -560,7 +560,7 @@ class TradeMonitor:
                 realized_pnl=portfolio['total_realized_pnl'],
                 total_pnl=portfolio['total_pnl'],
                 portfolio_value=portfolio['total_position_value'],
-                active_positions=portfolio['active_positions']
+                active_positions=int(portfolio['active_positions'])
             )
 
             with self._lock:

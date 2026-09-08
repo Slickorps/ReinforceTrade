@@ -5,8 +5,8 @@ from data.data_loader import DataLoader
 from .rl_agent import RLAgent
 from utils.logger import logger
 import matplotlib.pyplot as plt
-import numpy as np
 import os
+from typing import Dict, Any, List
 
 class TrainingCallback(BaseCallback):
     """

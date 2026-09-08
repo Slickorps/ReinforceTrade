@@ -795,7 +795,7 @@ class PerformanceTracker:
         """
         if not self._hourly_trade_counts:
             return None
-        return max(self._hourly_trade_counts, key=self._hourly_trade_counts.get)
+        return max(self._hourly_trade_counts, key=lambda h: self._hourly_trade_counts[h])
 
     def get_hourly_distribution(self) -> Dict[int, int]:
         """Get trade count per hour of day."""

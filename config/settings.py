@@ -1,8 +1,8 @@
 try:
     from pydantic_settings import BaseSettings, SettingsConfigDict
 except ImportError:
-    from pydantic import BaseSettings
-    SettingsConfigDict = None
+    from pydantic import BaseSettings  # type: ignore[no-redef]
+    SettingsConfigDict = None  # type: ignore[assignment,misc]
 import os
 
 class Settings(BaseSettings):

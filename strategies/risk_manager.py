@@ -12,8 +12,8 @@ class RiskManager:
         self.max_portfolio_risk = max_portfolio_risk  # 5% max portfolio risk
         self.max_correlation = max_correlation
         self.max_drawdown = max_drawdown  # 15% max drawdown limit
-        self.current_exposure = {}
-        self.trade_history = []
+        self.current_exposure: Dict[str, float] = {}
+        self.trade_history: List[Dict[str, Any]] = []
         
         logger.info("RiskManager initialized")
 
@@ -60,7 +60,7 @@ class RiskManager:
         # Check portfolio exposure limit
         portfolio_limit = total_portfolio_value * self.max_portfolio_risk
         if total_exposure + new_position_value > portfolio_limit:
-            logger.warning(f"Portfolio exposure limit exceeded")
+            logger.warning("Portfolio exposure limit exceeded")
             return False
         
         return True
