@@ -13,9 +13,14 @@ class EnhancedBacktester(Backtester):
     Provides comprehensive performance metrics and visualization.
     """
     def __init__(self, strategy: MultiAgentStrategy, initial_balance: float = 10000,
-                 risk_manager: RiskManager = None):
-        super().__init__(strategy, initial_balance)
-        self.risk_manager = risk_manager or RiskManager()
+                 risk_manager: RiskManager = None, lookback: int = 60):
+        super().__init__(strategy, initial_balance, lookback)
+        # Default the portfolio risk limit to the strategy's max position fraction
+        # so a max-size position is not rejected by the risk manager
+        # (TradingBot wires `settings.max_position_size` into `max_portfolio_risk` the same way).
+        self.risk_manager = risk_manager or RiskManager(
+            max_portfolio_risk=getattr(strategy, "max_position_size", 0.1)
+        )
         self.performance_metrics = {}
         self.equity_curve = []
         self.drawdown_periods = []
@@ -27,9 +32,16 @@ class EnhancedBacktester(Backtester):
         """
         logger.info(f"Starting enhanced backtest with {len(market_data)} data points")
 
+        window: List[Dict[str, Any]] = []
         for i, data in enumerate(market_data):
             current_price = data['close']
             timestamp = data.get('timestamp', i)
+
+            # Maintain a rolling price-history window so strategies can compute signals
+            window.append(data)
+            if len(window) > self.lookback:
+                window.pop(0)
+            context = {**data, "prices": list(window)}
 
             # Track equity
             current_equity = self._calculate_equity(current_price)
@@ -46,26 +58,26 @@ class EnhancedBacktester(Backtester):
                 position['unrealized_pnl'] = unrealized_pnl
 
                 # Check exit conditions
-                if self.strategy.should_exit(data, position):
+                if self.strategy.should_exit(context, position):
                     self.close_position(position, current_price)
 
             # Check entry conditions
-            if self.strategy.should_enter(data):
+            if self.strategy.should_enter(context):
                 # Get confidence from strategy
-                signals = self.strategy.get_agent_signals(data)
+                signals = self.strategy.get_agent_signals(context)
                 confidence = signals['decision'].get('confidence', 0)
 
                 # Check risk limits
-                symbol = data.get('symbol', 'UNKNOWN')
+                symbol = context.get('symbol', 'UNKNOWN')
                 position_size = self.strategy.calculate_position_size(self.balance, confidence)
 
                 if self.risk_manager.check_exposure(symbol, position_size, self.balance):
-                    self.open_position(data, position_size)
+                    self.open_position(context, position_size)
                     self.risk_manager.update_exposure(symbol, position_size)
 
             # Record agent signals for transparency
             if i % 100 == 0:  # Record every 100 steps
-                signals = self.strategy.get_agent_signals(data)
+                signals = self.strategy.get_agent_signals(context)
                 self.agent_signals_history.append({
                     'timestamp': timestamp,
                     'signals': signals
@@ -95,7 +107,8 @@ class EnhancedBacktester(Backtester):
             "amount": amount,
             "side": "long",
             "timestamp": data.get('timestamp'),
-            "size": position_size
+            "size": position_size,
+            "symbol": data.get('symbol', 'UNKNOWN')
         }
 
         self.positions.append(position)
@@ -132,6 +145,9 @@ class EnhancedBacktester(Backtester):
 
         self.trades.append(trade)
         self.risk_manager.record_trade(trade)
+
+        # Release this position's exposure so the capital can be reused
+        self.risk_manager.update_exposure(position.get('symbol', 'UNKNOWN'), 0)
 
         self.positions.remove(position)
         logger.info(f"Closed position: PnL={pnl:.2f} ({return_pct:.2f}%)")

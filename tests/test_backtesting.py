@@ -1,7 +1,25 @@
 import unittest
+import math
 import numpy as np
 from backtesting import Backtester, EnhancedBacktester
 from strategies import MultiAgentStrategy, RiskManager
+
+
+def make_trend_data(n=300, start=100.0, drift=0.004):
+    """Deterministic uptrend OHLCV series (no RNG) for regression tests."""
+    data = []
+    price = start
+    for i in range(n):
+        price *= 1 + drift + 0.0005 * ((i % 3) - 1)
+        data.append({
+            'timestamp': i,
+            'open': price,
+            'high': price * 1.001,
+            'low': price * 0.999,
+            'close': price,
+            'volume': 1000.0,
+        })
+    return data
 
 class TestBacktester(unittest.TestCase):
     def setUp(self):
@@ -50,6 +68,12 @@ class TestBacktester(unittest.TestCase):
         
         self.assertEqual(results['total_trades'], 3)
         self.assertEqual(results['total_pnl'], 1300)
+        self.assertGreater(results['win_rate'], 0)
+
+    def test_run_generates_trades_on_trend(self):
+        """Regression: backtest must feed price history so strategies can enter trades"""
+        results = self.backtester.run(make_trend_data())
+        self.assertGreater(results['total_trades'], 0)
         self.assertGreater(results['win_rate'], 0)
 
 class TestEnhancedBacktester(unittest.TestCase):
@@ -107,6 +131,17 @@ class TestEnhancedBacktester(unittest.TestCase):
         # Max drawdown from 11000 to 10200 = 800/11000 = 7.27%
         expected_dd = (11000 - 10200) / 11000
         self.assertAlmostEqual(max_dd, expected_dd, places=4)
+
+    def test_run_generates_trades_on_trend(self):
+        """Regression: enhanced backtest must enter/exit positions on trending data"""
+        backtester = EnhancedBacktester(
+            MultiAgentStrategy(use_rl=False),
+            initial_balance=10000,
+        )
+        results = backtester.run(make_trend_data())
+        self.assertGreater(results['total_trades'], 0)
+        self.assertGreater(results['win_rate'], 0)
+        self.assertNotEqual(results['sharpe_ratio'], 0)
 
 if __name__ == '__main__':
     unittest.main()

@@ -115,6 +115,32 @@ class TestMultiAgentIntegration(unittest.TestCase):
         self.assertGreaterEqual(results['win_rate'], 0)
         self.assertLessEqual(results['win_rate'], 1)
     
+    def test_backtest_generates_trades_on_trend(self):
+        """Regression: end-to-end backtest opens positions on trending data"""
+        # Deterministic uptrend with enough history for trend/short-term agents
+        market_data = []
+        price = 50000.0
+        for i in range(200):
+            price *= 1.004 + 0.0005 * ((i % 3) - 1)
+            market_data.append({
+                'timestamp': 1609459200 + i*3600,
+                'open': price,
+                'high': price * 1.001,
+                'low': price * 0.999,
+                'close': price,
+                'volume': 1000.0,
+            })
+
+        backtester = EnhancedBacktester(
+            MultiAgentStrategy(use_rl=False),
+            initial_balance=10000,
+        )
+        results = backtester.run(market_data)
+
+        self.assertGreater(results['total_trades'], 0)
+        self.assertGreater(results['win_rate'], 0)
+        self.assertNotEqual(results['sharpe_ratio'], 0)
+
     def test_risk_manager_integration(self):
         """Test risk manager integration with backtester"""
         # Generate market data

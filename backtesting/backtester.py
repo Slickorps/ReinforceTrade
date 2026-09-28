@@ -4,22 +4,30 @@ from strategies.base_strategy import BaseStrategy
 from utils.logger import logger
 
 class Backtester:
-    def __init__(self, strategy: BaseStrategy, initial_balance: float = 10000):
+    def __init__(self, strategy: BaseStrategy, initial_balance: float = 10000, lookback: int = 60):
         self.strategy = strategy
         self.initial_balance = initial_balance
         self.balance = initial_balance
         self.positions = []
         self.trades = []
+        self.lookback = lookback
         logger.info(f"Backtester initialized with strategy {strategy.name} and balance {initial_balance}")
 
     def run(self, market_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        window: List[Dict[str, Any]] = []
         for data in market_data:
+            # Maintain a rolling price-history window so strategies can compute signals
+            window.append(data)
+            if len(window) > self.lookback:
+                window.pop(0)
+            context = {**data, "prices": list(window)}
+
             # Check exit conditions for open positions
             for position in self.positions[:]:
-                if self.strategy.should_exit(data, position):
+                if self.strategy.should_exit(context, position):
                     self.close_position(position, data['close'])
             # Check entry conditions
-            if self.strategy.should_enter(data):
+            if self.strategy.should_enter(context):
                 self.open_position(data)
         # Close any remaining positions
         for position in self.positions:
