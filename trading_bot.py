@@ -17,6 +17,11 @@ class TradingBot:
     Main trading bot controller for live trading.
     Integrates multi-agent system, risk management, and exchange execution.
     """
+
+    # Order statuses that mean the order can no longer be cancelled
+    _FINAL_ORDER_STATUSES = frozenset({
+        'closed', 'filled', 'canceled', 'cancelled', 'rejected', 'expired'
+    })
     
     def __init__(self, 
                  exchange: CCXTExchange = None,
@@ -80,6 +85,8 @@ class TradingBot:
         self.last_trade_time = {}
         self.trade_history = []
         self.current_positions = {}
+        # Average entry price / amount per symbol, used for realized PnL
+        self.position_entries: Dict[str, Dict[str, float]] = {}
         
         # Performance metrics
         self.start_time = None
@@ -386,24 +393,70 @@ class TradingBot:
             logger.error(f"Error updating positions: {e}")
     
     def _record_trade(self, symbol: str, action: str, order: Dict[str, Any]) -> None:
-        """Record trade execution"""
+        """Record trade execution and update realized PnL / position cost basis"""
+        price = order.get('price')
+        amount = order.get('amount') or 0.0
+        realized_pnl: Optional[float] = None
+
+        if action == 'BUY' and price is not None and amount > 0:
+            entry = self.position_entries.get(symbol, {'amount': 0.0, 'avg_price': 0.0})
+            new_amount = entry['amount'] + amount
+            if new_amount > 0:
+                entry['avg_price'] = (
+                    entry['amount'] * entry['avg_price'] + amount * price
+                ) / new_amount
+            entry['amount'] = new_amount
+            self.position_entries[symbol] = entry
+
+        elif action == 'SELL' and price is not None and amount > 0:
+            current_entry = self.position_entries.get(symbol)
+            if current_entry and current_entry['amount'] > 0:
+                matched = min(amount, current_entry['amount'])
+                realized_pnl = (price - current_entry['avg_price']) * matched
+                self.total_pnl += realized_pnl
+                if realized_pnl > 0:
+                    self.winning_trades += 1
+                elif realized_pnl < 0:
+                    self.losing_trades += 1
+                current_entry['amount'] -= matched
+                if current_entry['amount'] <= 1e-12:
+                    self.position_entries.pop(symbol, None)
+                else:
+                    self.position_entries[symbol] = current_entry
+
         trade_record = {
             'timestamp': datetime.now(),
             'symbol': symbol,
             'action': action,
             'order_id': order.get('id'),
             'amount': order.get('amount'),
-            'price': order.get('price'),
-            'status': order.get('status')
+            'price': price,
+            'status': order.get('status'),
+            'realized_pnl': realized_pnl,
         }
-        
+
         self.trade_history.append(trade_record)
         self.total_trades += 1
-        
-        # Calculate PnL (simplified)
-        if action == 'SELL':
-            # TODO: Implement proper PnL calculation
-            pass
+
+    def _cancel_open_orders(self) -> int:
+        """Cancel any tracked orders that are still open. Returns count cancelled."""
+        if self.exchange is None:
+            return 0
+
+        cancelled = 0
+        for record in self.trade_history:
+            order_id = record.get('order_id')
+            status = str(record.get('status') or '').lower()
+            if not order_id or status in self._FINAL_ORDER_STATUSES:
+                continue
+            try:
+                if self.exchange.cancel_order(order_id):
+                    record['status'] = 'canceled'
+                    cancelled += 1
+                    logger.info(f"Cancelled open order {order_id}")
+            except Exception as e:
+                logger.error(f"Failed to cancel order {order_id}: {e}")
+        return cancelled
     
     def _log_trading_status(self) -> None:
         """Log current trading status"""
@@ -438,10 +491,11 @@ class TradingBot:
         """Perform graceful shutdown"""
         logger.info("Performing graceful shutdown...")
         
-        # Cancel any pending orders
+        # Cancel any pending/open orders before stopping
         try:
-            # TODO: Implement order cancellation logic
-            pass
+            cancelled = self._cancel_open_orders()
+            if cancelled:
+                logger.info(f"Cancelled {cancelled} open order(s) during shutdown")
         except Exception as e:
             logger.error(f"Error during shutdown: {e}")
         

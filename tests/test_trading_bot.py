@@ -252,6 +252,112 @@ class TestTradingBot(unittest.TestCase):
         self.assertEqual(bot.trade_history[0]['symbol'], 'BTC/USDT')
         self.assertEqual(bot.trade_history[0]['action'], 'BUY')
         
+    def test_record_trade_tracks_entry_price(self):
+        """Buying records an average entry price / amount for the symbol"""
+        bot = TradingBot(symbols=self.symbols)
+        
+        bot._record_trade('BTC/USDT', 'BUY', {
+            'id': '1', 'amount': 0.1, 'price': 50000.0, 'status': 'closed'
+        })
+        
+        entry = bot.position_entries['BTC/USDT']
+        self.assertAlmostEqual(entry['amount'], 0.1)
+        self.assertAlmostEqual(entry['avg_price'], 50000.0)
+        
+    def test_record_trade_averages_entry_price(self):
+        """Multiple buys produce a weighted average entry price"""
+        bot = TradingBot(symbols=self.symbols)
+        
+        bot._record_trade('BTC/USDT', 'BUY', {
+            'id': '1', 'amount': 0.1, 'price': 50000.0, 'status': 'closed'
+        })
+        bot._record_trade('BTC/USDT', 'BUY', {
+            'id': '2', 'amount': 0.1, 'price': 51000.0, 'status': 'closed'
+        })
+        
+        entry = bot.position_entries['BTC/USDT']
+        self.assertAlmostEqual(entry['amount'], 0.2)
+        self.assertAlmostEqual(entry['avg_price'], 50500.0)
+        
+    def test_record_trade_sell_realizes_profit(self):
+        """Selling above entry realizes PnL and updates win counters"""
+        bot = TradingBot(symbols=self.symbols)
+        
+        bot._record_trade('BTC/USDT', 'BUY', {
+            'id': '1', 'amount': 0.1, 'price': 50000.0, 'status': 'closed'
+        })
+        bot._record_trade('BTC/USDT', 'SELL', {
+            'id': '2', 'amount': 0.1, 'price': 51000.0, 'status': 'closed'
+        })
+        
+        # (51000 - 50000) * 0.1 = 100
+        self.assertAlmostEqual(bot.total_pnl, 100.0)
+        self.assertEqual(bot.winning_trades, 1)
+        self.assertEqual(bot.losing_trades, 0)
+        self.assertNotIn('BTC/USDT', bot.position_entries)
+        self.assertAlmostEqual(bot.trade_history[-1]['realized_pnl'], 100.0)
+        
+    def test_record_trade_sell_realizes_loss(self):
+        """Selling below entry realizes a loss"""
+        bot = TradingBot(symbols=self.symbols)
+        
+        bot._record_trade('BTC/USDT', 'BUY', {
+            'id': '1', 'amount': 0.1, 'price': 50000.0, 'status': 'closed'
+        })
+        bot._record_trade('BTC/USDT', 'SELL', {
+            'id': '2', 'amount': 0.1, 'price': 49000.0, 'status': 'closed'
+        })
+        
+        self.assertAlmostEqual(bot.total_pnl, -100.0)
+        self.assertEqual(bot.losing_trades, 1)
+        self.assertEqual(bot.winning_trades, 0)
+        
+    def test_execute_trade_sell_realizes_pnl(self):
+        """Full sell flow realizes PnL on an existing position"""
+        mock_exchange = Mock(spec=CCXTExchange)
+        mock_exchange.get_ticker.return_value = {'price': 51000.0}
+        mock_exchange.place_order.return_value = {
+            'id': '2', 'amount': 0.1, 'price': 51000.0, 'status': 'closed'
+        }
+        
+        bot = TradingBot(exchange=mock_exchange, symbols=self.symbols)
+        bot._record_trade('BTC/USDT', 'BUY', {
+            'id': '1', 'amount': 0.1, 'price': 50000.0, 'status': 'closed'
+        })
+        bot.current_positions = {'BTC/USDT': {'size': 0.1, 'current_price': 51000.0}}
+        
+        result = bot._execute_trade('BTC/USDT', {'action': 'SELL', 'strength': 0.8})
+        
+        self.assertTrue(result)
+        self.assertAlmostEqual(bot.total_pnl, 100.0)
+        
+    def test_graceful_shutdown_cancels_open_orders(self):
+        """Shutdown cancels orders that are still open"""
+        mock_exchange = Mock(spec=CCXTExchange)
+        mock_exchange.cancel_order.return_value = True
+        
+        bot = TradingBot(exchange=mock_exchange, symbols=self.symbols)
+        bot.trade_history = [
+            {'order_id': 'A', 'status': 'open'},
+            {'order_id': 'B', 'status': 'closed'},
+        ]
+        
+        bot._graceful_shutdown()
+        
+        mock_exchange.cancel_order.assert_called_once_with('A')
+        self.assertEqual(bot.trade_history[0]['status'], 'canceled')
+        self.assertEqual(bot.trade_history[1]['status'], 'closed')
+        
+    def test_graceful_shutdown_without_exchange(self):
+        """Shutdown is safe when no exchange is configured"""
+        bot = TradingBot(symbols=self.symbols)
+        bot.trade_history = [{'order_id': 'A', 'status': 'open'}]
+        
+        bot._graceful_shutdown()  # must not raise
+        
+        self.assertEqual(bot._cancel_open_orders(), 0)
+        self.assertEqual(bot.trade_history[0]['status'], 'open')
+        
     def test_repr(self):
         """Test string representation"""
         bot = TradingBot(symbols=self.symbols)
