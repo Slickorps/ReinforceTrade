@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 from strategies import BaseStrategy, MultiAgentStrategy, RiskManager
 
 class TestRiskManager(unittest.TestCase):
@@ -136,6 +137,82 @@ class TestMultiAgentStrategy(unittest.TestCase):
         # Should be around 10% above entry
         expected_tp = entry_price * 1.1
         self.assertAlmostEqual(tp_price, expected_tp, places=2)
+
+    def _decision(self, action, confidence):
+        return {'decision': {'action': action, 'confidence': confidence}}
+
+    def test_should_enter_true_on_confident_signal(self):
+        with patch.object(self.strategy.decision_tower, 'process_market_data',
+                          return_value=self._decision('buy', 0.8)):
+            self.assertTrue(self.strategy.should_enter({'close': 100}))
+
+    def test_should_enter_false_on_hold(self):
+        with patch.object(self.strategy.decision_tower, 'process_market_data',
+                          return_value=self._decision('hold', 0.9)):
+            self.assertFalse(self.strategy.should_enter({'close': 100}))
+
+    def test_should_enter_false_on_low_confidence(self):
+        with patch.object(self.strategy.decision_tower, 'process_market_data',
+                          return_value=self._decision('buy', 0.3)):
+            self.assertFalse(self.strategy.should_enter({'close': 100}))
+
+    def test_should_exit_long_stop_loss(self):
+        position = {'entry_price': 100.0, 'side': 'long'}
+        self.assertTrue(self.strategy.should_exit({'close': 94.0}, position))
+
+    def test_should_exit_short_stop_loss(self):
+        position = {'entry_price': 100.0, 'side': 'short'}
+        self.assertTrue(self.strategy.should_exit({'close': 106.0}, position))
+
+    def test_should_exit_long_take_profit(self):
+        position = {'entry_price': 100.0, 'side': 'long'}
+        self.assertTrue(self.strategy.should_exit({'close': 111.0}, position))
+
+    def test_should_exit_short_take_profit(self):
+        position = {'entry_price': 100.0, 'side': 'short'}
+        self.assertTrue(self.strategy.should_exit({'close': 89.0}, position))
+
+    def test_should_exit_long_on_reversal_signal(self):
+        position = {'entry_price': 100.0, 'side': 'long'}
+        with patch.object(self.strategy.decision_tower, 'process_market_data',
+                          return_value=self._decision('sell', 0.8)):
+            self.assertTrue(self.strategy.should_exit({'close': 100.5}, position))
+
+    def test_should_exit_short_on_reversal_signal(self):
+        position = {'entry_price': 100.0, 'side': 'short'}
+        with patch.object(self.strategy.decision_tower, 'process_market_data',
+                          return_value=self._decision('buy', 0.8)):
+            self.assertTrue(self.strategy.should_exit({'close': 99.5}, position))
+
+    def test_should_exit_false_without_signal(self):
+        position = {'entry_price': 100.0, 'side': 'long'}
+        with patch.object(self.strategy.decision_tower, 'process_market_data',
+                          return_value=self._decision('hold', 0.9)):
+            self.assertFalse(self.strategy.should_exit({'close': 100.5}, position))
+
+    def test_should_exit_false_on_low_confidence_reversal(self):
+        position = {'entry_price': 100.0, 'side': 'long'}
+        with patch.object(self.strategy.decision_tower, 'process_market_data',
+                          return_value=self._decision('sell', 0.3)):
+            self.assertFalse(self.strategy.should_exit({'close': 100.5}, position))
+
+    def test_short_stop_loss_and_take_profit_prices(self):
+        self.assertAlmostEqual(self.strategy.get_stop_loss_price(100.0, 'short'), 105.0)
+        self.assertAlmostEqual(self.strategy.get_take_profit_price(100.0, 'short'), 90.0)
+
+    def test_calculate_position_size_scales_with_confidence(self):
+        low = self.strategy.calculate_position_size(10000, 0.3)
+        full = self.strategy.calculate_position_size(10000, 0.6)
+        self.assertAlmostEqual(low, 500.0)   # 0.3 / 0.6 = 0.5 multiplier
+        self.assertAlmostEqual(full, 1000.0)
+
+    def test_get_agent_signals_delegates_to_decision_tower(self):
+        expected = self._decision('buy', 0.8)
+        with patch.object(self.strategy.decision_tower, 'process_market_data',
+                          return_value=expected) as tower:
+            result = self.strategy.get_agent_signals({'close': 100})
+        self.assertEqual(result, expected)
+        tower.assert_called_once_with({'close': 100})
 
 if __name__ == '__main__':
     unittest.main()

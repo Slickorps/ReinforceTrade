@@ -346,7 +346,7 @@ class ReportGenerator:
         df['returns'] = df['equity'].pct_change()
         
         # Resample to monthly
-        monthly_returns = df['returns'].resample('M').apply(lambda x: (1 + x).prod() - 1) * 100
+        monthly_returns = df['returns'].resample('ME').apply(lambda x: (1 + x).prod() - 1) * 100
         
         if len(monthly_returns) > 0:
             plt.figure(figsize=(12, 6))

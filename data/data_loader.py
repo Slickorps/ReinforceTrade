@@ -32,8 +32,19 @@ class DataLoader:
 
             # Convert timestamp if needed
             if date_column in df.columns:
-                df[date_column] = pd.to_datetime(df[date_column])
-                df['timestamp'] = df[date_column].astype(np.int64) // 10**9  # Convert to unix timestamp
+                raw = df[date_column]
+                if pd.api.types.is_numeric_dtype(raw):
+                    # Epoch seconds (or milliseconds when the value is large)
+                    ts = raw.astype('int64')
+                    df['timestamp'] = np.where(ts > 10**12, ts // 1000, ts)
+                else:
+                    # Parse date strings / datetimes to epoch seconds
+                    parsed = pd.to_datetime(raw, errors='coerce')
+                    df['timestamp'] = (
+                        (parsed.astype('int64') // 10**9)
+                        .where(parsed.notna(), 0)
+                        .astype('int64')
+                    )
 
             # Ensure required columns exist
             required_cols = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
@@ -116,7 +127,7 @@ class DataLoader:
             df['bb_lower'] = sma_20 - (std_20 * 2)
 
         # Fill NaN values
-        df = df.fillna(method='bfill').fillna(method='ffill').fillna(0)
+        df = df.bfill().ffill().fillna(0)
 
         logger.info(f"Preprocessed data with {len(df)} rows and {len(df.columns)} columns")
         return df

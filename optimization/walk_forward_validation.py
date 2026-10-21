@@ -110,7 +110,7 @@ class WalkForwardValidator:
         final_results = {
             'window_results': window_results,
             'aggregate': aggregate,
-            'is_robust': aggregate['robustness_score'] > 0.5
+            'is_robust': bool(aggregate['robustness_score'] > 0.5)
         }
         
         logger.info(f"Walk-forward validation completed. Robustness: {aggregate['robustness_score']:.2%}")

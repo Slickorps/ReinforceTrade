@@ -1,0 +1,24 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["."]
+branch = false
+omit = [
+    "tests/*",
+    ".kilo/*",
+    "rust/*",
+    "dashboard/*",
+    "monitor/*",
+    "sql/*",
+    "scripts/*",
+    "setup.py",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
