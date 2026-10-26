@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
@@ -19,9 +19,9 @@ class WalkForwardValidator:
         self.data = data
         self.train_size = train_size
         self.test_size = test_size
-        self.results = []
+        self.results: List[Dict[str, Any]] = []
         
-    def run_walk_forward(self, param_grid: Dict[str, List[Any]] = None, 
+    def run_walk_forward(self, param_grid: Optional[Dict[str, List[Any]]] = None, 
                         optimization_method: str = 'grid',
                         metric: str = 'sharpe_ratio') -> Dict[str, Any]:
         """
@@ -70,7 +70,7 @@ class WalkForwardValidator:
             in_sample_results = self._test_strategy(train_data, best_params)
             out_of_sample_results = self._test_strategy(test_data, best_params)
             
-            window_result = {
+            window_result: Dict[str, Any] = {
                 'window': window_num,
                 'train_start': window_start,
                 'train_end': train_end,

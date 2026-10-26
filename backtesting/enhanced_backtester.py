@@ -1,7 +1,7 @@
 from backtesting.backtester import Backtester
 from strategies.risk_manager import RiskManager
 from strategies.multi_agent_strategy import MultiAgentStrategy
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, cast
 from utils.logger import logger
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -13,7 +13,7 @@ class EnhancedBacktester(Backtester):
     Provides comprehensive performance metrics and visualization.
     """
     def __init__(self, strategy: MultiAgentStrategy, initial_balance: float = 10000,
-                 risk_manager: RiskManager = None, lookback: int = 60):
+                 risk_manager: Optional[RiskManager] = None, lookback: int = 60):
         super().__init__(strategy, initial_balance, lookback)
         # Default the portfolio risk limit to the strategy's max position fraction
         # so a max-size position is not rejected by the risk manager
@@ -21,10 +21,10 @@ class EnhancedBacktester(Backtester):
         self.risk_manager = risk_manager or RiskManager(
             max_portfolio_risk=getattr(strategy, "max_position_size", 0.1)
         )
-        self.performance_metrics = {}
-        self.equity_curve = []
-        self.drawdown_periods = []
-        self.agent_signals_history = []
+        self.performance_metrics: Dict[str, Any] = {}
+        self.equity_curve: List[Dict[str, Any]] = []
+        self.drawdown_periods: List[Dict[str, Any]] = []
+        self.agent_signals_history: List[Dict[str, Any]] = []
 
     def run(self, market_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -32,6 +32,7 @@ class EnhancedBacktester(Backtester):
         """
         logger.info(f"Starting enhanced backtest with {len(market_data)} data points")
 
+        strategy = cast(MultiAgentStrategy, self.strategy)
         window: List[Dict[str, Any]] = []
         for i, data in enumerate(market_data):
             current_price = data['close']
@@ -58,18 +59,18 @@ class EnhancedBacktester(Backtester):
                 position['unrealized_pnl'] = unrealized_pnl
 
                 # Check exit conditions
-                if self.strategy.should_exit(context, position):
+                if strategy.should_exit(context, position):
                     self.close_position(position, current_price)
 
             # Check entry conditions
-            if self.strategy.should_enter(context):
+            if strategy.should_enter(context):
                 # Get confidence from strategy
-                signals = self.strategy.get_agent_signals(context)
+                signals = strategy.get_agent_signals(context)
                 confidence = signals['decision'].get('confidence', 0)
 
                 # Check risk limits
                 symbol = context.get('symbol', 'UNKNOWN')
-                position_size = self.strategy.calculate_position_size(self.balance, confidence)
+                position_size = strategy.calculate_position_size(self.balance, confidence)
 
                 if self.risk_manager.check_exposure(symbol, position_size, self.balance):
                     self.open_position(context, position_size)
@@ -77,7 +78,7 @@ class EnhancedBacktester(Backtester):
 
             # Record agent signals for transparency
             if i % 100 == 0:  # Record every 100 steps
-                signals = self.strategy.get_agent_signals(context)
+                signals = strategy.get_agent_signals(context)
                 self.agent_signals_history.append({
                     'timestamp': timestamp,
                     'signals': signals
@@ -94,7 +95,7 @@ class EnhancedBacktester(Backtester):
         logger.info("Enhanced backtest completed")
         return results
 
-    def open_position(self, data: Dict[str, Any], position_size: float = None):
+    def open_position(self, data: Dict[str, Any], position_size: Optional[float] = None):
         """Open position with specified size"""
         if position_size is None:
             position_size = self.balance * 0.1  # Default 10%

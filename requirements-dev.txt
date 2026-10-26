@@ -1,0 +1,6 @@
+# Development / CI tooling (install with: python -m pip install -r requirements-dev.txt)
+pytest>=7.0
+pytest-cov>=4.0
+flake8>=6.0
+flake8-pyproject>=1.2
+mypy>=1.0

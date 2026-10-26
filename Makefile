@@ -1,14 +1,15 @@
-.PHONY: help install test lint format clean docker-build docker-run rust-build rust-test rust-clean go-build go-test dashboard-install dashboard-build dashboard-watch web
+.PHONY: help install test test-unit test-integration lint typecheck format clean docker-build docker-run rust-build rust-test rust-clean go-build go-test dashboard-install dashboard-build dashboard-watch web
 
 help:
 	@echo "ReinforceTrade - Multi-Language Quant Trading System"
 	@echo ""
 	@echo "=== Python ==="
-	@echo "  install          - Install Python dependencies"
+	@echo "  install          - Install Python dependencies (runtime + dev)"
 	@echo "  test             - Run all Python tests"
 	@echo "  test-unit        - Run unit tests only"
 	@echo "  test-integration - Run integration tests only"
 	@echo "  lint             - Run linting (flake8)"
+	@echo "  typecheck        - Run static type checks (mypy)"
 	@echo "  format           - Format code (black)"
 	@echo "  clean            - Clean temporary files"
 	@echo "  backtest         - Run basic backtest example"
@@ -41,24 +42,27 @@ help:
 	@echo "  web              - Run web dashboard server"
 
 install:
-	pip install -r requirements.txt
-	pip install -r requirements-dev.txt 2>/dev/null || true
+	python -m pip install -r requirements.txt
+	python -m pip install -r requirements-dev.txt
 
 test:
-	pytest tests/ -v --cov=. --cov-report=term-missing
+	python -m pytest tests/ -v --cov=. --cov-report=term-missing
 
 test-unit:
-	pytest tests/test_agents.py tests/test_strategies.py tests/test_backtesting.py -v
+	python -m pytest tests/test_agents.py tests/test_strategies.py tests/test_backtesting.py -v
 
 test-integration:
-	pytest tests/test_integration.py -v
+	python -m pytest tests/test_integration.py -v
 
 lint:
-	flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-	flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+	python -m flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+	python -m flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+typecheck:
+	python -m mypy
 
 format:
-	black . --line-length 100 2>/dev/null || echo "black not installed, skipping"
+	python -m black . --line-length 100 2>/dev/null || echo "black not installed, skipping"
 
 clean:
 	find . -type f -name "*.pyc" -delete

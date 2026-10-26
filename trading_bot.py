@@ -24,10 +24,10 @@ class TradingBot:
     })
     
     def __init__(self, 
-                 exchange: CCXTExchange = None,
-                 symbols: List[str] = None,
-                 risk_manager: RiskManager = None,
-                 strategy: MultiAgentStrategy = None):
+                 exchange: Optional[CCXTExchange] = None,
+                 symbols: Optional[List[str]] = None,
+                 risk_manager: Optional[RiskManager] = None,
+                 strategy: Optional[MultiAgentStrategy] = None):
         """
         Initialize TradingBot with all necessary components.
         
@@ -82,14 +82,14 @@ class TradingBot:
         self.running = False
         self.trading_thread = None
         self.interval = settings.trading_interval  # seconds
-        self.last_trade_time = {}
-        self.trade_history = []
-        self.current_positions = {}
+        self.last_trade_time: Dict[str, Any] = {}
+        self.trade_history: List[Dict[str, Any]] = []
+        self.current_positions: Dict[str, Dict[str, Any]] = {}
         # Average entry price / amount per symbol, used for realized PnL
         self.position_entries: Dict[str, Dict[str, float]] = {}
         
         # Performance metrics
-        self.start_time = None
+        self.start_time: Optional[datetime] = None
         self.total_trades = 0
         self.winning_trades = 0
         self.losing_trades = 0
@@ -103,6 +103,13 @@ class TradingBot:
         logger.info("TradingBot initialized successfully")
         logger.info(f"Monitoring symbols: {self.symbols}")
         logger.info(f"Trading interval: {self.interval}s")
+
+    @property
+    def _ex(self) -> CCXTExchange:
+        """Exchange accessor that raises if no exchange is configured."""
+        if self.exchange is None:
+            raise RuntimeError("Exchange is not configured")
+        return self.exchange
     
     def run_live(self, test_mode: bool = True) -> None:
         """
@@ -158,7 +165,7 @@ class TradingBot:
             agent_signals = self._get_agent_signals(market_data)
             
             # 3. Get decision from decision tower
-            decision = self.decision_tower.aggregate_signals(agent_signals, market_data)
+            decision = self.decision_tower.aggregate_signals(agent_signals)
             
             # 4. Check risk limits
             if not self._check_risk_limits(decision):
@@ -193,7 +200,7 @@ class TradingBot:
         for symbol in self.symbols:
             try:
                 # Get ticker data
-                ticker = self.exchange.get_ticker(symbol)
+                ticker = self._ex.get_ticker(symbol)
                 if ticker:
                     market_data[symbol] = ticker
                 else:
@@ -276,7 +283,7 @@ class TradingBot:
             strength = signal.get('strength', 0.5)
             
             # Get current market price
-            ticker = self.exchange.get_ticker(symbol)
+            ticker = self._ex.get_ticker(symbol)
             if not ticker or not ticker.get('price'):
                 logger.error(f"Failed to get current price for {symbol}")
                 return False
@@ -298,7 +305,7 @@ class TradingBot:
             
             # Execute trade
             if action == 'BUY':
-                order = self.exchange.place_order(
+                order = self._ex.place_order(
                     symbol=symbol,
                     side='buy',
                     amount=position_size,
@@ -312,7 +319,7 @@ class TradingBot:
                     logger.warning(f"No position to sell for {symbol}")
                     return False
                 
-                order = self.exchange.place_order(
+                order = self._ex.place_order(
                     symbol=symbol,
                     side='sell',
                     amount=min(position_size, current_position),
@@ -338,7 +345,7 @@ class TradingBot:
     def _get_account_balance(self) -> float:
         """Get current account balance in quote currency (e.g., USDT)"""
         try:
-            balance = self.exchange.get_balance()
+            balance = self._ex.get_balance()
             # Sum all quote currency balances (USDT, USD, etc.)
             total = 0.0
             for currency, amount in balance.items():
@@ -370,7 +377,7 @@ class TradingBot:
     def _update_positions(self) -> None:
         """Update current positions from exchange"""
         try:
-            balance = self.exchange.get_balance()
+            balance = self._ex.get_balance()
             
             for symbol in self.symbols:
                 base_currency = symbol.split('/')[0]
@@ -378,7 +385,7 @@ class TradingBot:
                     size = balance[base_currency]
                     if size > 0:
                         # Get current price
-                        ticker = self.exchange.get_ticker(symbol)
+                        ticker = self._ex.get_ticker(symbol)
                         if ticker:
                             self.current_positions[symbol] = {
                                 'size': size,

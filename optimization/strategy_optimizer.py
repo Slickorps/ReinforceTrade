@@ -1,6 +1,6 @@
 import itertools
 import numpy as np
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 from datetime import datetime
 from backtesting.enhanced_backtester import EnhancedBacktester
 from strategies.multi_agent_strategy import MultiAgentStrategy
@@ -17,9 +17,9 @@ class StrategyOptimizer:
     def __init__(self, data: List[Dict[str, Any]], initial_balance: float = 10000):
         self.data = data
         self.initial_balance = initial_balance
-        self.results = []
-        self.best_params = None
-        self.best_score = -np.inf
+        self.results: List[Dict[str, Any]] = []
+        self.best_params: Optional[Dict[str, Any]] = None
+        self.best_score: float = -np.inf
         
     def grid_search(self, param_grid: Dict[str, List[Any]], metric: str = 'sharpe_ratio') -> Tuple[Dict[str, Any], float]:
         """
@@ -34,13 +34,12 @@ class StrategyOptimizer:
         param_names = list(param_grid.keys())
         param_values = list(param_grid.values())
         
-        best_params = None
+        best_params: Optional[Dict[str, Any]] = None
         best_score = -np.inf
         all_results = []
         
         for i, combination in enumerate(itertools.product(*param_values)):
             params = dict(zip(param_names, combination))
-            
             logger.info(f"Testing combination {i+1}: {params}")
             
             # Create strategy with these parameters
@@ -78,7 +77,7 @@ class StrategyOptimizer:
         self.best_score = best_score
         
         logger.info(f"Grid search completed. Best params: {best_params}, Score: {best_score:.4f}")
-        return best_params, best_score
+        return best_params or {}, float(best_score)
     
     def genetic_algorithm(self, param_bounds: Dict[str, Tuple[float, float]], 
                          population_size: int = 20, 
@@ -132,7 +131,7 @@ class StrategyOptimizer:
             population = new_population
         
         logger.info(f"Genetic algorithm completed. Best params: {self.best_params}, Score: {self.best_score:.4f}")
-        return self.best_params, self.best_score
+        return self.best_params or {}, float(self.best_score)
     
     def _create_strategy_with_params(self, params: Dict[str, Any]) -> MultiAgentStrategy:
         """Create strategy instance with given parameters"""
@@ -245,7 +244,7 @@ class StrategyOptimizer:
         report.append("STRATEGY OPTIMIZATION REPORT")
         report.append("=" * 60)
         report.append(f"Best Parameters:")
-        for param, value in self.best_params.items():
+        for param, value in (self.best_params or {}).items():
             report.append(f"  {param}: {value}")
         report.append(f"\nBest Score: {self.best_score:.4f}")
         report.append(f"\nTop 5 Configurations:")

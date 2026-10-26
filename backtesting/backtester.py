@@ -8,8 +8,8 @@ class Backtester:
         self.strategy = strategy
         self.initial_balance = initial_balance
         self.balance = initial_balance
-        self.positions = []
-        self.trades = []
+        self.positions: List[Dict[str, Any]] = []
+        self.trades: List[Dict[str, Any]] = []
         self.lookback = lookback
         logger.info(f"Backtester initialized with strategy {strategy.name} and balance {initial_balance}")
 

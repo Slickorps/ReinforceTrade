@@ -22,3 +22,40 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "raise NotImplementedError",
 ]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+explicit_package_bases = true
+mypy_path = "."
+files = [
+    "ml",
+    "trading",
+    "agents",
+    "strategies",
+    "backtesting",
+    "optimization",
+    "environments",
+    "data",
+    "reports",
+    "web",
+    "utils",
+    "config",
+    "trading_bot.py",
+]
+
+[tool.flake8]
+max-line-length = 127
+max-complexity = 10
+exclude = [
+    ".git",
+    "__pycache__",
+    ".mypy_cache",
+    ".pytest_cache",
+    "rust",
+    "dashboard",
+    "monitor",
+    ".kilo",
+    "build",
+    "dist",
+]
